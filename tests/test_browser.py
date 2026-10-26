@@ -32,10 +32,10 @@ with sync_playwright() as p:
   # Directly grabbing the post-shot yellow arm must use the displayed B angle.
   page.evaluate('reviewing=true;draw(1,lastShot)');page.locator('#mechanism').scroll_into_view_if_needed()
   point=page.evaluate('''()=>{const angle=displayedArmAngle*Math.PI/180,pt=new DOMPoint(diagramPose.pivot.x+Math.cos(angle)*160*.62,diagramPose.pivot.y-Math.sin(angle)*160*.62);return pt.matrixTransform($('mechanism').getScreenCTM()).toJSON()}''')
-  page.mouse.move(point['x'],point['y']);page.mouse.down();assert page.evaluate('Math.abs(factors[0].value-Math.max(100,factors[1].value))<=1');page.mouse.up()
+  page.mouse.move(point['x'],point['y']);page.mouse.down();assert page.evaluate('Math.abs(factors[0].value-Math.max(100,factors[1].value))<=1');page.mouse.up();page.wait_for_function('manual.length===2 && !busy')
   # Changed target must immediately show the chosen goal rather than an old snapshot.
   page.click('[data-select-target="2"]');assert page.evaluate('!reviewing && activeTarget===2')
-  page.evaluate('applySettings([145,100,300,200,200])');page.select_option('#playbackMode','physical');page.click('#launch');page.wait_for_function('!busy && manual.length===2');assert page.evaluate('recentShots.length===2')
+  page.evaluate('applySettings([145,100,300,200,200])');page.select_option('#playbackMode','physical');page.click('#launch');page.wait_for_function('!busy && manual.length===3');assert page.evaluate('recentShots.length===3')
   page.check('#compareTrajectories');assert not errors,errors
   page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth')
   print(filename, 'PASS',result)
