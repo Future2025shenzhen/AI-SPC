@@ -221,9 +221,9 @@ function arenaTransform(shot,w,h){
  const minX=-.62,ground=h-47,scale=Math.min((w-65)/(maxDistance-minX),(ground-75)/maxHeight);
  const origin=30-minX*scale;return {scale,ground,origin,minX,maxDistance,maxHeight};
 }
-let currentViewProgress=1;
+let currentViewProgress=1,currentViewShot=null;
 function draw(progress=1,shot=(reviewing?lastShot:null)){
- currentViewProgress=progress;
+ currentViewProgress=progress;currentViewShot=shot;
  drawMechanism(progress,shot);updateMotionReadout(progress,shot);
  const fitted=fitCanvas('scene');if(!fitted)return;const {ctx:c,w,h}=fitted;
  const active=shot?.valid&&(progress<1||reviewing||motionPlaying),displayShot=shot?.valid?shot:null;
@@ -329,9 +329,9 @@ const originalUpdateMetrics=updateMetrics;updateMetrics=function(){originalUpdat
 const originalSetShotLock=setShotLock;setShotLock=function(locked){originalSetShotLock(locked);$('autoRelease').disabled=locked||auto;$('angleControls').querySelectorAll('input,button').forEach(e=>e.disabled=locked||auto);const result=model(vals());$('launch').disabled=locked||auto||!result.valid;$('verifyTarget').disabled=locked||auto||!result.valid};
 $('carrierExplanation').textContent=FRAME_FOLLOWS_B?'本文件按用户的文字要求：B 限位杆与 A 共用转轴 O，右侧 D 支架底座也随 B 绕 O 转动，B=100° 为基准。D 从支架底部零点量起。支架底座 R=Rot(B−100°)·(0.28,0)，销点 P=R+Rot(B−100°)·(D·sin5°,D·cos5°)/1000。回绳锚点 T=(Pₓ,0)，调节后在底座导轨上对准 D 锁定，使 P→T 始终垂直地面。发射期间，B 机构与锚点锁定，只有 A 臂转动。原站实测的右侧 D 支架为固定式；此文件有意遵循本轮用户文字中 D 也转动的描述。':'本文件按原站实测结构：A 臂与 B 限位杆共用转轴 O，右侧 D 支架固定；改变 B 不使右支架移动。D 从右支架底部零点量起，支架相对竖直线前倾5°；销点 P=(0.28+D·sin5°/1000,D·cos5°/1000)，回绳锚点 T=(Pₓ,0)。P→T 严格垂直地面，回绳段长度为 D·cos5°/1000。发射期间，B 限位机构保持锁定。';
 
-$('showDirection').onchange=$('compareTrajectories').onchange=()=>{if(!busy)draw(currentViewProgress)};
+$('showDirection').onchange=$('compareTrajectories').onchange=()=>{if(!busy)draw(currentViewProgress,currentViewShot)};
 $('recockArm').onclick=()=>{if(busy||auto||verificationRunning)return;reviewing=false;draw(1,null);$('sceneStatus').textContent='已重新上弦 · 按当前五项设置准备发射'};
 document.addEventListener('keydown',event=>{if(event.code!=='Space'||event.repeat||event.target.closest('input,select,textarea,button,[role="slider"]')||!$('lab').checkVisibility())return;event.preventDefault();if(!busy&&!auto&&!verificationRunning)$('launch').click()});
 
-window.addEventListener('resize',()=>{draw();drawInteraction()});applyDesignPreset(true);renderManual();updateMetrics();draw();controls();
+window.addEventListener('resize',()=>{draw(currentViewProgress,currentViewShot);drawInteraction()});applyDesignPreset(true);renderManual();updateMetrics();draw();controls();
 </script></body></html>
