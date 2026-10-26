@@ -1,72 +1,27 @@
-本次界面更新：标题为「投射器实验设计与分析 / Catapult Design of Experiments & Analysis」。深蓝、白、浅灰工业配色；图上 A–E 仅在操作对应变量时出现；移除准备发射浮框、零点文字。右立臂由 220 mm 加长 20% 至 264 mm，D 调节范围仍为 0–200 mm，销点与弹力计算未变。主视图视窗由 550 最多扩展至 715，投射器保持至少约 77% 尺寸；完整弹道和落点请看下方全程视图。近、中、远为互斥单选，落点与成绩只显示当前目标，历史记录和 CSV 保留各目标数据。手动记录表占整行，窄屏自动换行。以下历史说明如有冲突，以本段为准。
+# 投射器实验设计与分析
 
-# 投射器 DOE · 紧凑竖直 D 支架版
+Catapult Design of Experiments & Analysis。下载 ZIP、解压，打开 `DOE_Catapult_Reference_Layout.html`，无需安装或联网。`DOE_Catapult_Competition.html` 为相同兼容入口。
 
-[下载程序 ZIP](https://github.com/Future2025shenzhen/AI-SPC/archive/refs/heads/main.zip)
+- 中文微软雅黑；深蓝工业风；投射器右侧面板已移除，变量在左侧操作。
+- A 球种（0 乒乓球、1 高尔夫球）；B 释放角；C 开火角；D 球杯高度；E 定位销刻度；F 弹力绳挂点。E 为 0–200 格，1 格=1.22 mm；200 格距立臂上端 20 mm，图像和物理共用此比例。
+- 拖黄色臂、松手发射；点击机身仅上弦。可拖球、绳挂点和定位销。标签只在操作时显示。默认慢镜头：回转、离杯、飞行、首次落地；暂停、回放和时间轴不新增记录。主视图保留机构尺寸，下方展示完整弹道。
+- 近、中、远目标互斥单选，用户设置目标值，公差 ±15 cm，按首次落地判定。保存参数、重复确认、记录及 CSV 导出。
+- 支持 2⁶ 全因子、2⁶⁻¹ 半分数（分辨率 VI）、可选中心点、球种交叉 CCF、iCCC/CCI 内接中心复合。无区组；分类因子没有中间水平。
+- 回归提供编码方程、主效应及交互、按球种分层的曲率检验、纯误差和失拟检验、系数标准误和 P 值、残差图及拟合图。响应曲面为每种球分别拟合五个连续因子的完整二次方程。支持方程与检验 CSV 导出。
 
-解压后，用 Chrome / Edge 打开 HTML，即可离线使用。中文优先使用电脑已安装的微软雅黑。
+建议教学流程：先运行默认全因子＋中心点 → 检查曲率 → 点击「使用局部 iCCC 范围」并重新生成、运行 → 检查残差与失拟 → 选择拟合建议设置 → 回到实验台独立验证。默认实验顺序随机化；每次重新生成都会消耗随机流，具体 P 值随样本改变，不预设显著性。
 
-## 程序入口
+真实物理不是严格二次方程。宽范围可能显著失拟，应缩小范围；高 R² 不等于验证通过。检验依赖独立、方差齐性假设；CV 噪声可能异方差。数据只保存在当前页面内存，刷新前请导出 CSV。
 
-`DOE_Catapult_Reference_Layout.html` 为推荐入口；`DOE_Catapult_Competition.html` 保留作为兼容文件名。两者现在都采用固定竖直的 D 支架，改变 B 只调限位角，不再让右臂倾斜。
-
-![机构近景与操作面板](preview.png)
-
-[查看参考图姿态与新比例](preview-reference.png) · [查看连续发射](preview-flight.png) · [查看结构透视](preview-structure.png)
-
-## 本轮优化
-
-- D 支架向左靠近挡板，改为竖直平底，与底座直角连接。
-- 支架总长 220 mm，顶部只比 200 刻度高 20 mm；D 范围仍为 0–200 mm。
-- 底座右侧收短；底部灰色地面线的左半段移除，锚点导轨仅保留右段。
-- C 上限与默认值均为 420 mm；默认释放角仍为 120°。
-- 保留等大透明悬浮标识、无连线、拖臂发射、拖球调节、点击只上弦、三目标 ±15 cm 和 DOE。
-
-D 的几何与锚点位置已同步到计算模型。教学弹性系数改为 36 N/m，以保持 70–700 cm 目标探索范围；不使用射程缩放。新旧几何的数据应分别分析。[当前物理参数与验证](PHYSICS_NOTES.md) · [参考来源](GITHUB_REFERENCES.md)。
-
-## 操作
-
-直接拖动黄色臂，松手即可发射。要只调位置，取消“拖动黄色投射臂，松手即发射”。A / B 也支持圆弧拖动、大滑块、数字输入与 ±1°；C / E 沿臂拖动，D 沿支架拖动。
-
-| 变量 | 范围 |
-|---|---|
-| A 释放角 | 100–185° |
-| B 开火角度 | 90–120° |
-| C 球杯位置 | 200–420 mm |
-| D 距支架底部的销位置 | 0–200 mm |
-| E 绳挂点位置 | 100–200 mm |
-
-D 的测量零点是 0，可调区间为 0–200 mm。A 不能低于 B；A=B 时尚未上弦。调整限位 B 时尚未上弦的臂随限位移动。
-
-## 三目标与 DOE
-
-近 / 中 / 远默认 250 / 300 / 425 cm，可以设置 70–700 cm 内的递增目标。公差 **±15 cm，含上下边界**。实际落点按物理模型计算，不强制裁剪至目标范围。
-
-探索和确认验证分开记录。确认默认连续 10 次，可设 2–30 次；锁定参数和目标，支持完成本发后停止。成绩只统计每个目标最近一组同设置验证，旧目标和历史设置不覆盖。
-
-保留 PPT 教学路线：课堂三因子 A/C/D，B=110°、E=200 mm 固定；19 次全因子加中心点；25 次表面中心设计；效应、交互、响应拟合、三个目标的建议设置以及独立确认验证。也保留五因子全因子与半分数。
-
-物理假设和验证见 [PHYSICS_NOTES.md](PHYSICS_NOTES.md)。程序是明确假设下的教学模型，图形独立重绘，不是原设备的标定数字孪生。
-
-数据只保存在当前网页内存，刷新或关闭会清空，请及时导出。
-
-
-## 开发验证
-
-程序使用不依赖外部库的原生 HTML / SVG / Canvas，直接打开即可使用。开发测试可运行：
+## 验证
 
 ```sh
-python -m pip install -r tests/requirements.txt
-python -m playwright install chromium
+pip install -r tests/requirements.txt
 python tests/test_physics.py
-python tests/test_browser.py
-python tests/test_follow_camera.py
-python tests/test_ground_recock.py
-python tests/test_arm_ball_ranges.py
-python tests/test_coordinated_proportions.py
-python tests/test_upright_reference.py
+python tests/test_six_factor_doe.py
+python tests/test_six_factor_interaction.py
 ```
 
-物理测试与独立 SciPy 高精度积分比较，并检查能量平衡；浏览器测试检查球杯位置、离杯连续性、静态 SVG 复用、回放数据完整性、落地后拉臂、目标切换及移动端宽度；跟随镜头测试检查离杯前后球心、每个飞行采样点是否在视野内、平滑变焦及透视操作不改变数据。若系统已安装 `chromium`，测试优先使用该浏览器。
+需要 Chromium（可用系统 `/usr/bin/chromium`）。物理测试使用独立 SciPy 积分；六因子测试覆盖全部设计、分类中心点、回归、P 值对照、发射、CSV 和移动布局。旧五因子版本的断言已由新测试替换，可从 Git 历史查阅。
 
-移除桌面后射程会与旧版有所不同；旧版数据和新版数据请分别用于 DOE 分析。回放仍使用原发射轨迹，点击机身仅重新上弦；主动发射才增加一次试验。
+[下载主分支 ZIP](https://github.com/Future2025shenzhen/AI-SPC/archive/refs/heads/main.zip)
