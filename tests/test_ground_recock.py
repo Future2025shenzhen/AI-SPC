@@ -8,7 +8,7 @@ with sync_playwright() as p:
   page=b.new_page(viewport={'width':1600,'height':1100});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.set_content((ROOT/filename).read_text())
   assert page.evaluate('Math.abs(diagramPose.pivot.y+PHYSICS.pivotHeight*620-503)<1e-10 && diagramPose.pivot.y===445')
   assert page.locator('#world-stand').count()==0
-  assert page.locator('#base-front').evaluate('(el)=>{const b=el.getBBox();return b.width===360 && b.height===28}')
+  assert page.locator('#base-front').evaluate('(el)=>{const b=el.getBBox();return b.width===360 && b.height===18}')
   centers=page.evaluate('''()=>{const ids=['a-arm','b-limit','protractor'];const points=ids.map(id=>new DOMPoint(0,0).matrixTransform($(id).getScreenCTM()));return Math.max(...points.map(p=>Math.hypot(p.x-points[0].x,p.y-points[0].y)))}''');assert centers<1e-8
   assert page.locator('#protractor>path').first.evaluate('(el)=>{const length=el.getTotalLength();return Array.from({length:21},(_,i)=>{const p=el.getPointAtLength(i*length/20);return Math.abs(Math.hypot(p.x,p.y)-48)}).every(e=>e<.01)}')
   assert page.locator('.rig-actions #recockArm').count()==1 and page.locator('.rig-actions #launch').count()==1
