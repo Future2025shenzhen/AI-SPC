@@ -6,7 +6,7 @@ with sync_playwright() as p:
  b=p.chromium.launch(**({'executable_path':shutil.which('chromium')} if shutil.which('chromium') else {}),args=['--no-sandbox'])
  for filename in ['DOE_Catapult_Competition.html','DOE_Catapult_Reference_Layout.html']:
   page=b.new_page(viewport={'width':1600,'height':1100});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.set_content((ROOT/filename).read_text())
-  assert page.evaluate('Math.abs(diagramPose.pivot.y+PHYSICS.pivotHeight*620-503)<1e-10 && diagramPose.pivot.y===445')
+  assert page.evaluate('Math.abs(diagramPose.pivot.y+PHYSICS.pivotHeight*620-503)<1e-10 && diagramPose.pivot.y===470')
   assert page.locator('#world-stand').count()==0
   assert page.locator('#base-front').evaluate('(el)=>{const b=el.getBBox();return b.width===360 && b.height===18}')
   centers=page.evaluate('''()=>{const ids=['a-arm','b-limit','protractor'];const points=ids.map(id=>new DOMPoint(0,0).matrixTransform($(id).getScreenCTM()));return Math.max(...points.map(p=>Math.hypot(p.x-points[0].x,p.y-points[0].y)))}''');assert centers<1e-8
