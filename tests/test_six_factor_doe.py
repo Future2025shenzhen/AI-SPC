@@ -21,7 +21,7 @@ with sync_playwright() as p:
    if t=='iccc':assert page.evaluate('Math.abs(plan.find(r=>r.kind==="corner").codes[0])')<.448
   page.click('#localRSM');page.click('#generate');page.evaluate('while(plan.some(r=>r.y===null))nextRun();renderAnalysis()');assert page.evaluate('fitModel.k')==42
   print(name,'local fit:',page.evaluate('({rmse:fitModel.rmse,pLof:fitModel.inference.pLof})'))
-  page.click('[data-tab="lab"]');page.select_option('#ballType','1');page.select_option('#motionSpeed','2');page.click('#launch');page.wait_for_function('manual.length===1&&!busy',timeout=30000)
+  page.click('[data-tab="lab"]');page.select_option('#ballType','1');page.fill('#valueB','145');page.locator('#valueB').press('Tab');page.select_option('#motionSpeed','2');page.click('#launch');page.wait_for_function('manual.length===1&&!busy',timeout=30000)
   assert page.evaluate('manual[0].vals[5]===1');assert '高尔夫球' in page.locator('#manualRows').text_content()
   page.evaluate('draw(1,lastShot)');assert page.evaluate('Number($("mechanism").viewBox.baseVal.width)<=800.001')
   with page.expect_download() as dl:page.click('#exportManual')
