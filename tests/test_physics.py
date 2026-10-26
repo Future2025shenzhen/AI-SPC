@@ -11,7 +11,7 @@ def reference(v,rotating=True):
  def release(t,z):return z[0]-b
  release.direction=-1;release.terminal=True
  armSol=solve_ivp(arm,[0,3],[a,0],events=release,max_step=.001,atol=1e-12,rtol=1e-11);assert armSol.t_events[0].size
- w=armSol.y_events[0][0][1];speed=r*w;angle=b-math.pi/2;h=78/620+r*math.sin(b);drag=.5*1.225*.47*math.pi*.015**2/.008
+ w=armSol.y_events[0][0][1];speed=r*w;angle=b-math.pi/2;h=58/620+r*math.sin(b);drag=.5*1.225*.47*math.pi*.015**2/.008
  def ball(t,z):
   x,y,vx,vy=z;v=math.hypot(vx,vy);return [vx,vy,-drag*v*vx,-9.80665-drag*v*vy]
  def landing(t,z):return z[1]
