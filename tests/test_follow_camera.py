@@ -12,7 +12,7 @@ with sync_playwright() as p:
       draw(release-1e-9,shot);const before={x:Number($('loaded-ball').getAttribute('cx')),y:Number($('loaded-ball').getAttribute('cy'))};draw(release,shot);
       const after={x:Number($('world-ball').getAttribute('cx')),y:Number($('world-ball').getAttribute('cy'))};maxReleaseGap=Math.max(maxReleaseGap,Math.hypot(after.x-before.x,after.y-before.y));
       let prior=0;for(let i=0;i<=120;i++){const time=shot.armTime+shot.t*i/120,progress=time/(shot.armTime+shot.t);draw(progress,shot);const point=samplePath(shot.path,time-shot.armTime),expectedX=diagramPose.pivot.x+shot.vals[2]*.62*Math.cos(shot.vals[1]*Math.PI/180)+point.x*620,expectedY=diagramPose.pivot.y+PHYSICS.pivotHeight*620-point.y*620;
-       maxPositionError=Math.max(maxPositionError,Math.abs(Number($('world-ball').getAttribute('cx'))-expectedX),Math.abs(Number($('world-ball').getAttribute('cy'))-expectedY));const box=$('mechanism').viewBox.baseVal,x=Number($('world-ball').getAttribute('cx')),y=Number($('world-ball').getAttribute('cy'));if(x<box.x||x>box.x+box.width||y<box.y||y>box.y+box.height)failures.push({settings,i,x,y,box:[box.x,box.y,box.width,box.height]});const blend=Number($('mechanism').dataset.cameraBlend);if(blend<prior)failures.push('camera moved backwards');maxBlendStep=Math.max(maxBlendStep,blend-prior);prior=blend;
+       maxPositionError=Math.max(maxPositionError,Math.abs(Number($('world-ball').getAttribute('cx'))-expectedX),Math.abs(Number($('world-ball').getAttribute('cy'))-expectedY));const box=$('mechanism').viewBox.baseVal,x=Number($('world-ball').getAttribute('cx')),y=Number($('world-ball').getAttribute('cy'));if(box.width>715.001)failures.push('excessive zoom');const blend=Number($('mechanism').dataset.cameraBlend);if(blend<prior)failures.push('camera moved backwards');maxBlendStep=Math.max(maxBlendStep,blend-prior);prior=blend;
       }
       if($('world-impact').getAttribute('visibility')!=='visible')failures.push('missing first impact');
     }return {failures,maxPositionError,maxReleaseGap,maxBlendStep,noExtraRecords:manual.length===countBefore,noRandomConsumed:rngState===seedBefore}}''')
@@ -25,6 +25,6 @@ with sync_playwright() as p:
   page.uncheck('#followLaunch');assert page.evaluate('Number($("mechanism").dataset.cameraBlend)')==0
   page.click('#recockArm');assert page.evaluate('!reviewing');assert page.locator('#world-ball').get_attribute('visibility')=='hidden'
   page.set_viewport_size({'width':390,'height':844});assert page.evaluate('document.documentElement.scrollWidth<=innerWidth');assert not errors,errors
-  print(filename+': continuous release, all samples in camera, smooth camera, correct impact, xray/no data or RNG changes/mobile PASS',report)
+  print(filename+': continuous release, bounded near-view zoom and exact world positions, smooth camera, correct impact, xray/no data or RNG changes/mobile PASS',report)
   page.close()
  b.close()

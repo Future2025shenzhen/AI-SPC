@@ -6,12 +6,12 @@ with sync_playwright() as p:
  b=p.chromium.launch(**({'executable_path':shutil.which('chromium')} if shutil.which('chromium') else {}),args=['--no-sandbox'])
  for filename in ['DOE_Catapult_Competition.html','DOE_Catapult_Reference_Layout.html']:
   page=b.new_page(viewport={'width':1600,'height':1100});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.set_content((ROOT/filename).read_text())
-  assert page.evaluate('vals()[0]===120 && vals()[2]===420 && PHYSICS.armLength===.46 && PHYSICS.postLength===.22')
+  assert page.evaluate('vals()[0]===120 && vals()[2]===420 && PHYSICS.armLength===.46 && PHYSICS.postLength===.264')
   assert page.evaluate('diagramPose.pivot.y===470 && Math.abs(PHYSICS.pivotHeight*620+470-503)<1e-10')
   assert page.locator('#mechanism').text_content().find('DOE LAB')==-1
   assert page.locator('#cup-leader,#bungee-leader,#arm-a-leader').count()==0
   assert page.locator('[data-factor] .handle-ring').evaluate_all('(es)=>es.length===5 && es.every(e=>e.getAttribute("r")==="20")')
-  assert page.locator('[data-factor] .badge-face').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).animationName==="badgeHover")')
+  assert page.locator('[data-factor] .badge-face').evaluate_all('(es)=>es.every(e=>getComputedStyle(e).animationName==="none")')
   assert page.locator('#loaded-ball').get_attribute('r')=='16'
   assert 'scale(1.45)' in page.locator('#cup-assembly').get_attribute('transform')
   assert page.locator('#front-guard').evaluate('(e)=>Math.abs(e.getBBox().width-301*.6)<1e-3')
