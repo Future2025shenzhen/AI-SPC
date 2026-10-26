@@ -275,7 +275,7 @@ function updateLaunchView(svg,m,shot,progress,cup){
  }
  const tx=releaseX+target*6.2;
  set('world-target-band',{x:tx-15*6.2,y:floor,width:30*6.2,height:0});set('world-target-line',{d:`M ${tx-15*6.2} ${floor} H ${tx+15*6.2}`});
- set('world-target-label',{x:tx,y:floor-22*zoom,'font-size':14*zoom});$('world-target-label').textContent=targetName+' '+target+' ±15 cm';
+ set('world-target-label',{x:tx,y:floor-22*zoom,'font-size':9.8*zoom});$('world-target-label').textContent=targetName+' '+target+' ±15 cm';
  set('world-trajectory',{'stroke-width':2*zoom,visibility:flying?'visible':'hidden'});
  set('world-ball',{visibility:flying?'visible':'hidden',r:16*(1-blend)+Math.max(16,8/pixelScale)*blend,'stroke-width':.6*zoom});
  set('tape-impact-pointer',{visibility:flying&&progress>=1?'visible':'hidden'});set('world-impact',{visibility:'hidden'});set('world-result',{visibility:flying&&progress>=1?'visible':'hidden'});
@@ -286,7 +286,7 @@ function updateLaunchView(svg,m,shot,progress,cup){
   const landingX=releaseX+shot.distance/100*S;set('tape-impact-pointer',{d:`M ${landingX} ${floor+9} V ${floor+54}`});
   const hit=isHit(shot.distance,target),color=hit?'#227c58':'#b85a40';
   set('world-impact',{cx:releaseX+shot.distance/100*S,cy:floor,rx:12*zoom,ry:4*zoom,stroke:color,'stroke-width':2*zoom});
-  set('world-result',{x:Math.max(view.x+105*zoom,Math.min(view.x+view.width-105*zoom,releaseX+shot.distance/100*S)),y:floor-40*zoom,fill:color,'font-size':15*zoom});$('world-result').textContent=format(shot.distance,1)+' cm · '+(hit?'命中':'未命中');
+  set('world-result',{x:Math.max(view.x+105*zoom,Math.min(view.x+view.width-105*zoom,releaseX+shot.distance/100*S)),y:floor-40*zoom,fill:color,'font-size':10.5*zoom});$('world-result').textContent=format(shot.distance,1)+' cm · '+(hit?'命中':'未命中');
  }
  const hudPhase=!active?'准备发射':progress>=1?'首次落地':flying?'小球飞行':'回转加速';
  $('hudLaunchPhase').textContent=hudPhase;
