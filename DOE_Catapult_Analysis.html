@@ -2543,7 +2543,7 @@ function drawOptimizerProfileRow(canvas,item,best){
     text(ctx,factorLevelLabel(fi,factor.low),plotL,tickY,"#5b6b80","left",'9.5px "Microsoft YaHei"');
     text(ctx,isBallFactor(fi)?"":fmt(midV,1),boxL+boxW/2,tickY,"#5b6b80","center",'9.5px "Microsoft YaHei"');
     text(ctx,factorLevelLabel(fi,factor.high),plotR,tickY,"#5b6b80","right",'9.5px "Microsoft YaHei"');
-    line(ctx,plotL,T+ph,plotL,T+ph+3,"#c3cfdb",1);line(ctx,boxL+boxW/2,T+ph,boxL+boxW/2,T+ph+3,"#c3cfdb",1);line(ctx,plotR,T+ph,plotR,T+ph+3,"#c3cfdb",1);
+    line(ctx,plotL,T+ph,plotL,T+ph+3,"#c3cfdb",1);if(!isBallFactor(fi))line(ctx,boxL+boxW/2,T+ph,boxL+boxW/2,T+ph+3,"#c3cfdb",1);line(ctx,plotR,T+ph,plotR,T+ph+3,"#c3cfdb",1);
     text(ctx,factor.name,px+panelW/2,T-20,"#24384f","center",'bold 11.5px "Microsoft YaHei"');
     text(ctx,"当前 "+factorLevelLabel(fi,factor.low+(factor.high-factor.low)*(z[fi]+1)/2),px+panelW/2,T-6,"#1a6fd4","center",'9.5px "Microsoft YaHei"');
     if(fi===0)for(let g=0;g<=4;g++){const y=T+ph*g/4,v=minY+(maxY-minY)*(4-g)/4;
@@ -2552,14 +2552,21 @@ function drawOptimizerProfileRow(canvas,item,best){
     cg.addColorStop(0,"#123a63");cg.addColorStop(1,"#2f7fb8");
     const optX=plotL+(z[fi]+1)/2*plotW,optY=mapY(optPred);
     ctx.save();ctx.beginPath();ctx.rect(boxL,T,boxW,ph);ctx.clip();
-    ctx.beginPath();
-    curve.forEach((p,i)=>{const x=plotL+(p.x-factor.low)/(factor.high-factor.low)*plotW;const y=mapY(p.y);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
-    ctx.strokeStyle=cg;ctx.lineWidth=2;ctx.lineJoin="round";ctx.stroke();
+    if(isBallFactor(fi)){
+      // Categories are separate choices: never interpolate or connect their responses.
+      curve.forEach(p=>{const x=plotL+(p.x-factor.low)/(factor.high-factor.low)*plotW;ctx.beginPath();ctx.arc(x,mapY(p.y),5.4,0,Math.PI*2);ctx.fillStyle=cg;ctx.fill();ctx.strokeStyle="#ffffff";ctx.lineWidth=1.3;ctx.stroke();});
+    }else{
+      ctx.beginPath();
+      curve.forEach((p,i)=>{const x=plotL+(p.x-factor.low)/(factor.high-factor.low)*plotW;const y=mapY(p.y);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+      ctx.strokeStyle=cg;ctx.lineWidth=2;ctx.lineJoin="round";ctx.stroke();
+    }
     line(ctx,optX,T,optX,T+ph,"#e04b57",2,[4,3]);
-    line(ctx,boxL,optY,boxR,optY,"#12a2a8",1.2,[5,4]);
+    if(!isBallFactor(fi))line(ctx,boxL,optY,boxR,optY,"#12a2a8",1.2,[5,4]);
     ctx.restore();
     ctx.beginPath();ctx.fillStyle="#e04b57";
-    ctx.moveTo(optX,optY-5.4);ctx.lineTo(optX+5.4,optY);ctx.lineTo(optX,optY+5.4);ctx.lineTo(optX-5.4,optY);ctx.closePath();ctx.fill();
+    if(isBallFactor(fi))ctx.arc(optX,optY,5.4,0,Math.PI*2);
+    else{ctx.moveTo(optX,optY-5.4);ctx.lineTo(optX+5.4,optY);ctx.lineTo(optX,optY+5.4);ctx.lineTo(optX-5.4,optY);ctx.closePath();}
+    ctx.fill();
     ctx.strokeStyle="#ffffff";ctx.lineWidth=1.3;ctx.stroke();
     ctx.beginPath();ctx.fillStyle="#e04b57";
     ctx.moveTo(optX-4,T+ph);ctx.lineTo(optX+4,T+ph);ctx.lineTo(optX,T+ph-5);ctx.closePath();ctx.fill();
