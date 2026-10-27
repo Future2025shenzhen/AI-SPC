@@ -1222,7 +1222,7 @@ const state = {
   responses:[{id:"Y1",name:"Y1 直径",goal:"maximize",lower:null,target:null,upper:null,weight:1}]
 };
 let analyzeTimer = null;
-const surfaceView = {yaw:-.72,pitch:.52,zoom:.6,dragging:false,lastX:0,lastY:0,bound:false};
+const surfaceView = {yaw:-.72,pitch:-.25,zoom:.6,dragging:false,lastX:0,lastY:0,bound:false};
 let optimizerChartInstances = [];
 let lastOptimizerResult = null;
 
@@ -1251,6 +1251,8 @@ function fmt(v,d=4){
   }
   return trimZeros(v.toFixed(d));
 }
+function isBallFactor(i){const f=state.factors[i];return !!f&&(f.categorical===true||f.physicalIndex===5||(Array.isArray(window.__catPhysicalMap)&&window.__catPhysicalMap[i]===5)||/球的种类|球种/.test(f.name))}
+function factorLevelLabel(i,value){return isBallFactor(i)?(value<.5?'乒乓球':'高尔夫球'):Number.isFinite(value)?value.toFixed(1):'—'}
 function fmtP(p){if(!Number.isFinite(p))return "—"; return p<.0001?"<0.0001":p.toFixed(4);}
 function termLabel(t){
   if(t.kind==="center")return "中心点（曲率）";
@@ -1331,8 +1333,8 @@ function renderFactorEditor(){
     const f=old[i]||defaultFactors[i]||{name:`X${i+1}`,low:0,high:1};
     html+=`<div class="factor-row"><div class="grid3">
       <input class="control factor-name name" value="${esc(f.name)}" aria-label="因子名称">
-      <input class="control factor-low" type="number" step="any" value="${f.low}" aria-label="低水平">
-      <input class="control factor-high" type="number" step="any" value="${f.high}" aria-label="高水平">
+      ${isBallFactor(i)?`<select class="control factor-low" aria-label="球种低水平" disabled><option value="0" ${f.low===0?"selected":""}>乒乓球</option><option value="1" ${f.low===1?"selected":""}>高尔夫球</option></select>`:`<input class="control factor-low" type="number" step="any" value="${f.low}" aria-label="低水平">`}
+      ${isBallFactor(i)?`<select class="control factor-high" aria-label="球种高水平" disabled><option value="0" ${f.high===0?"selected":""}>乒乓球</option><option value="1" ${f.high===1?"selected":""}>高尔夫球</option></select>`:`<input class="control factor-high" type="number" step="any" value="${f.high}" aria-label="高水平">`}
     </div></div>`;
   }
   $("#factorEditor").innerHTML=html;
@@ -1656,10 +1658,10 @@ function renderRunTable(){
     const cls=(r.isNew?"new-row ":"")+(r.kind==="center"?"center-row":r.kind==="axial"?"axial-row":"");
     const pill=r.kind==="center"?'<span class="pill pill-amber">中心</span>':r.kind==="axial"?'<span class="pill pill-cyan">轴点</span>':r.kind==="pb"?'<span class="pill pill-violet">PB</span>':'<span class="pill pill-blue">析因</span>';
     html+=`<tr class="${cls}" data-run="${r.run}"><td>${r.std}</td><td>${r.run}</td><td>${pill}</td><td>${r.block}</td>`;
-    r.x.forEach((v,i)=>html+=`<td title="编码值 ${fmt(r.z[i],3)}${Math.abs(r.z[i])>1.0001?"（轴向点：超出原 ±1 水平范围）":""}">${fmt(v,5)}</td>`);
+    r.x.forEach((v,i)=>html+=`<td title="编码值 ${fmt(r.z[i],3)}${Math.abs(r.z[i])>1.0001?"（轴向点：超出原 ±1 水平范围）":""}">${esc(factorLevelLabel(i,v))}</td>`);
     state.responses.forEach((resp,ri)=>{
       const val=r.ys?.[ri];
-      html+=`<td style="${ri===state.activeResponse?"background:#f5f8ff":""}"><input class="y-input" type="number" step="any" value="${val===null||val===undefined?"":val}" data-run="${r.run}" data-response="${ri}" aria-label="${esc(resp.name)} 响应值"></td>`;
+      html+=`<td style="${ri===state.activeResponse?"background:#f5f8ff":""}"><input class="y-input" type="number" step="any" value="${val===null||val===undefined?"":Number(val).toFixed(1)}" data-run="${r.run}" data-response="${ri}" aria-label="${esc(resp.name)} 响应值"></td>`;
     });
     html+=`</tr>`;
   }
@@ -2018,7 +2020,7 @@ function drawMain(){
     ctx.fillStyle=ag;ctx.fill();
     line(ctx,x0,y0,x1,y1,"#0069c2",1.35);ctx.fillStyle="#0069c2";
     for(const [x,y] of [[x0,y0],[x1,y1]]){ctx.beginPath();ctx.arc(x,y,3.6,0,Math.PI*2);ctx.fill();ctx.strokeStyle="#0b477a";ctx.stroke();}
-    text(ctx,fmt(state.factors[i].low,3),x0,h-B+16,"#536273","center");text(ctx,fmt(state.factors[i].high,3),x1,h-B+16,"#536273","center");
+    text(ctx,factorLevelLabel(i,state.factors[i].low),x0,h-B+16,"#536273","center");text(ctx,factorLevelLabel(i,state.factors[i].high),x1,h-B+16,"#536273","center");
   }
   line(ctx,L,T,L,h-B,"#68727e");line(ctx,L,h-B,w-R,h-B,"#68727e");line(ctx,w-R,T-14,w-R,h-B,"#68727e");
   ctx.save();ctx.translate(19,(T+h-B)/2);ctx.rotate(-Math.PI/2);text(ctx,`${activeResponseName()} 拟合均值`,0,0,"#455a72","center",'11px "Microsoft YaHei"');ctx.restore();
@@ -2043,12 +2045,12 @@ function drawInteractions(){
       line(ctx,xa,py[0],xb,py[1],color,1.35,bi?[7,5]:[]);
       [xa,xb].forEach((x,j)=>{ctx.fillStyle=color;if(bi){ctx.fillRect(x-3,py[j]-3,6,6);}else{ctx.beginPath();ctx.arc(x,py[j],3.3,0,Math.PI*2);ctx.fill();}});
     });
-    text(ctx,fmt(state.factors[t.idx[0]].low,3),xa,bottom+13,"#536273","center");text(ctx,fmt(state.factors[t.idx[0]].high,3),xb,bottom+13,"#536273","center");
+    text(ctx,factorLevelLabel(t.idx[0],state.factors[t.idx[0]].low),xa,bottom+13,"#536273","center");text(ctx,factorLevelLabel(t.idx[0],state.factors[t.idx[0]].high),xb,bottom+13,"#536273","center");
     if(row===1||pairs.length===1)text(ctx,state.factors[t.idx[0]].name,(left+right)/2,bottom+28,"#344054","center");
     if(pi<2){
       const lx=w-R+10,ly=T+row*ph+22;text(ctx,state.factors[t.idx[1]].name,lx,ly-10,"#344054","left",'10px "Microsoft YaHei"');
-      line(ctx,lx,ly+8,lx+20,ly+8,"#0069c2",1.3);ctx.fillStyle="#0069c2";ctx.beginPath();ctx.arc(lx+10,ly+8,3,0,Math.PI*2);ctx.fill();text(ctx,fmt(state.factors[t.idx[1]].low,3),lx+26,ly+8,"#344054");
-      line(ctx,lx,ly+25,lx+20,ly+25,"#c91d25",1.3,[7,5]);ctx.fillStyle="#c91d25";ctx.fillRect(lx+7,ly+22,6,6);text(ctx,fmt(state.factors[t.idx[1]].high,3),lx+26,ly+25,"#344054");
+      line(ctx,lx,ly+8,lx+20,ly+8,"#0069c2",1.3);ctx.fillStyle="#0069c2";ctx.beginPath();ctx.arc(lx+10,ly+8,3,0,Math.PI*2);ctx.fill();text(ctx,factorLevelLabel(t.idx[1],state.factors[t.idx[1]].low),lx+26,ly+8,"#344054");
+      line(ctx,lx,ly+25,lx+20,ly+25,"#c91d25",1.3,[7,5]);ctx.fillStyle="#c91d25";ctx.fillRect(lx+7,ly+22,6,6);text(ctx,factorLevelLabel(t.idx[1],state.factors[t.idx[1]].high),lx+26,ly+25,"#344054");
     }
   });
   ctx.save();ctx.translate(22,(T+h-B)/2);ctx.rotate(-Math.PI/2);text(ctx,"拟合均值",0,0,"#344054","center");ctx.restore();
@@ -2061,26 +2063,25 @@ function drawCube(){
   const vertices=[];for(const a of [-1,1])for(const b of [-1,1])for(const c of [-1,1])vertices.push({a,b,c,p:project(a,b,c)});
   const by=(a,b,c)=>vertices.find(v=>v.a===a&&v.b===b&&v.c===c);
   for(const axis of ["a","b","c"])for(const v of vertices)if(v[axis]===-1){const q={...v,[axis]:1};line(ctx,v.p[0],v.p[1],by(q.a,q.b,q.c).p[0],by(q.a,q.b,q.c).p[1],"#667085",1,[5,4]);}
-  vertices.forEach(v=>{const z=Array(state.factors.length).fill(0);z[0]=v.a;z[1]=v.b;z[2]=v.c;const val=predictAt(z),[x,y]=v.p;ctx.fillStyle="#172033";ctx.beginPath();ctx.arc(x,y,3.2,0,Math.PI*2);ctx.fill();const label=fmt(val,4),tw=ctx.measureText(label).width+8;ctx.fillStyle="#fff";ctx.strokeStyle="#667085";ctx.fillRect(x-tw/2,y-20,tw,15);ctx.strokeRect(x-tw/2,y-20,tw,15);text(ctx,label,x,y-12.5,"#172033","center");});
-  const f=state.factors;text(ctx,`${f[0].name}: ${fmt(f[0].low,3)} → ${fmt(f[0].high,3)}`,w/2,h-13,"#475467","center");
-  text(ctx,`${f[1].name}: ${fmt(f[1].low,3)} → ${fmt(f[1].high,3)}`,18,h/2,"#475467","left");
-  text(ctx,`${f[2].name}: ${fmt(f[2].low,3)} → ${fmt(f[2].high,3)}`,w-18,h/2,"#475467","right");
+  vertices.forEach(v=>{const z=Array(state.factors.length).fill(0);z[0]=v.a;z[1]=v.b;z[2]=v.c;const val=predictAt(z),[x,y]=v.p;ctx.fillStyle="#172033";ctx.beginPath();ctx.arc(x,y,3.2,0,Math.PI*2);ctx.fill();const label=fmt(val,1),tw=ctx.measureText(label).width+8;ctx.fillStyle="#fff";ctx.strokeStyle="#667085";ctx.fillRect(x-tw/2,y-20,tw,15);ctx.strokeRect(x-tw/2,y-20,tw,15);text(ctx,label,x,y-12.5,"#172033","center");});
+  const f=state.factors;text(ctx,`${f[0].name}: ${factorLevelLabel(0,f[0].low)} → ${factorLevelLabel(0,f[0].high)}`,w/2,h-13,"#475467","center");
+  text(ctx,`${f[1].name}: ${factorLevelLabel(1,f[1].low)} → ${factorLevelLabel(1,f[1].high)}`,18,h/2,"#475467","left");
+  text(ctx,`${f[2].name}: ${factorLevelLabel(2,f[2].low)} → ${factorLevelLabel(2,f[2].high)}`,w-18,h/2,"#475467","right");
 }
 function renderSurfaceControls(){
-  const sx=$("#surfaceX"),sy=$("#surfaceY");if(!sx||!sy)return;
-  const oldX=Number(sx.value),oldY=Number(sy.value);
-  const opts=state.factors.map((f,i)=>`<option value="${i}">${esc(f.name)}</option>`).join("");
-  sx.innerHTML=opts;sy.innerHTML=opts;
-  sx.value=String(Number.isInteger(oldX)&&oldX<state.factors.length?oldX:0);
-  sy.value=String(Number.isInteger(oldY)&&oldY<state.factors.length&&oldY!==Number(sx.value)?oldY:1);
-  if(sx.value===sy.value)sy.value=String(state.factors.length>1?1:0);
+ const sx=$('#surfaceX'),sy=$('#surfaceY');if(!sx||!sy)return;
+ const eligible=state.factors.map((f,i)=>i).filter(i=>!isBallFactor(i)),oldX=Number(sx.value),oldY=Number(sy.value),opts=eligible.map(i=>`<option value="${i}">${esc(state.factors[i].name)}</option>`).join('');
+ sx.innerHTML=opts;sy.innerHTML=opts;sx.value=String(eligible.includes(oldX)?oldX:eligible[0]);sy.value=String(eligible.includes(oldY)&&oldY!==Number(sx.value)?oldY:eligible.find(i=>i!==Number(sx.value)));sx.disabled=sy.disabled=eligible.length<2;
+ const host=sx.parentElement,category=state.factors.findIndex((f,i)=>isBallFactor(i));let label=$('#surfaceBallLabel');if(category>=0){if(!label){label=document.createElement('label');label.id='surfaceBallLabel';label.innerHTML='球种 <select id="surfaceBallKind" class="control"><option value="乒乓球">乒乓球</option><option value="高尔夫球">高尔夫球</option></select>';host.append(label);$('#surfaceBallKind').onchange=()=>{drawSurface();drawContour()}}}else label?.remove();
+ if(!$('#surfacePlane')){const button=document.createElement('button');button.id='surfacePlane';button.className='btn btn-soft';button.textContent='查看主效应平面';button.onclick=()=>selectModel('main');host.append(button)}
+ if(!$('#surfaceInteractions')){const button=document.createElement('button');button.id='surfaceInteractions';button.className='btn btn-soft';button.textContent='恢复交互／二次模型';button.onclick=()=>selectModel('two');host.append(button)}
+ let note=$('#surfaceCategoryNote');if(!note){note=document.createElement('p');note.id='surfaceCategoryNote';note.className='hint';host.after(note)}note.textContent=category>=0?'固定所选球种，横纵轴均为连续因子。可切换球种比较；主效应模型是平面，含交互或二次项的模型可呈曲面。':'横纵轴为连续因子；其余因子固定在中心水平。';
 }
-function codedLimit(){let m=1;state.runs.forEach(r=>r.z.forEach(v=>{if(Math.abs(v)>m)m=Math.abs(v);}));return m;}
+function codedLimit(){let m=1;state.runs.forEach(r=>r.z.forEach(v=>{if(Math.abs(v)>m)m=Math.abs(v)}));return m}
 function responseGrid(n=23){
-  const ix=Number($("#surfaceX").value)||0,iy=Number($("#surfaceY").value)||1,grid=[],vals=[];
-  const lim=codedLimit();
-  for(let j=0;j<n;j++){const row=[];for(let i=0;i<n;i++){const z=Array(state.factors.length).fill(0);z[ix]=-lim+2*lim*i/(n-1);z[iy]=-lim+2*lim*j/(n-1);const v=predictAt(z);row.push(v);vals.push(v);}grid.push(row);}
-  return {ix,iy,n,grid,vals,lim,min:Math.min(...vals),max:Math.max(...vals)};
+ const eligible=state.factors.map((f,i)=>i).filter(i=>!isBallFactor(i));let ix=Number($('#surfaceX').value),iy=Number($('#surfaceY').value);if(!eligible.includes(ix)||!eligible.includes(iy)||ix===iy){renderSurfaceControls();ix=Number($('#surfaceX').value);iy=Number($('#surfaceY').value)}
+ const grid=[],vals=[],lim=codedLimit(),category=state.factors.findIndex((f,i)=>isBallFactor(i)),categoryName=$('#surfaceBallKind')?.value||'乒乓球',base=Array(state.factors.length).fill(0);if(category>=0)base[category]=categoryName==='乒乓球'?-1:1;
+ for(let j=0;j<n;j++){const row=[];for(let i=0;i<n;i++){const z=[...base];z[ix]=-lim+2*lim*i/(n-1);z[iy]=-lim+2*lim*j/(n-1);const v=predictAt(z);row.push(v);vals.push(v)}grid.push(row)}return {ix,iy,n,grid,vals,lim,min:Math.min(...vals),max:Math.max(...vals),categoryName:category>=0?categoryName:''};
 }
 function colorScale(v,min,max,alpha=1){
   const t=clamp((v-min)/Math.max(max-min,EPS),0,1);
@@ -2090,7 +2091,7 @@ function colorScale(v,min,max,alpha=1){
 }
 
 function resetSurfaceView(){
-  surfaceView.yaw=-.72;surfaceView.pitch=.52;surfaceView.zoom=.6;
+  surfaceView.yaw=-.72;surfaceView.pitch=-.25;surfaceView.zoom=.6;
   if(state.fit)drawSurface();
 }
 function bindSurfaceInteractions(canvas){
@@ -2116,7 +2117,7 @@ function bindSurfaceInteractions(canvas){
 function drawSurface(){
   const canvas=$("#surfaceCanvas");if(!canvas)return;
   bindSurfaceInteractions(canvas);
-  if(!state.fit||state.factors.length<2)return noPlot(canvas,"至少需要两个因子和可用模型");
+  if(!state.fit||state.factors.filter((f,i)=>!isBallFactor(i)).length<2)return noPlot(canvas,"曲面图需要两个连续因子；球种请用主效应图比较");
   const d=responseGrid(33),fx=state.factors[d.ix],fy=state.factors[d.iy];
   const {ctx,w,h}=prepCanvas(canvas,392),cx=w*.47,cy=h*.53;
   const bg=ctx.createLinearGradient(0,0,0,h);bg.addColorStop(0,"#ffffff");bg.addColorStop(1,"#f1f6fa");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
@@ -2162,17 +2163,17 @@ function drawSurface(){
   }
   const origin=corner(-1,-1,-1),xEnd=corner(1,-1,-1),yEnd=corner(-1,1,-1),zEnd=corner(-1,-1,1);
   const midF=f=>(f.low+f.high)/2,halfF=f=>Math.abs(f.high-f.low)/2;
-  const rng=f=>(d.lim>1.001?fmt(midF(f)-d.lim*halfF(f),4)+"~"+fmt(midF(f)+d.lim*halfF(f),4):fmt(f.low,4)+"~"+fmt(f.high,4));
+  const rng=f=>(d.lim>1.001?fmt(midF(f)-d.lim*halfF(f),1)+"~"+fmt(midF(f)+d.lim*halfF(f),1):fmt(f.low,1)+"~"+fmt(f.high,1));
   text(ctx,fx.name,xEnd.x+10,xEnd.y+10,"#2c4258","left",'bold 12px "Microsoft YaHei"');
   text(ctx,fy.name,yEnd.x-10,yEnd.y+10,"#2c4258","right",'bold 12px "Microsoft YaHei"');
   text(ctx,activeResponseName(),zEnd.x,zEnd.y-14,"#2c4258","center",'bold 12px "Microsoft YaHei"');
-  text(ctx,"横轴 "+fx.name+" "+rng(fx)+"　纵轴 "+fy.name+" "+rng(fy)+"　响应 "+activeResponseName()+" 范围 "+fmt(d.min,4)+"~"+fmt(d.max,4),12,h-13,"#7a8a9e","left",'10.5px "Microsoft YaHei"');
+  text(ctx,(d.categoryName?"球种："+d.categoryName+"　":"")+"横轴 "+fx.name+" "+rng(fx)+"　纵轴 "+fy.name+" "+rng(fy)+"　响应 "+activeResponseName()+" 范围 "+fmt(d.min,1)+"~"+fmt(d.max,1),12,h-13,"#7a8a9e","left",'10.5px "Microsoft YaHei"');
   if(w>440){
     const lx=w-38,ly=92,lh=152,lw=12;
     for(let i=0;i<lh;i++){const v=d.max-(d.max-d.min)*i/(lh-1);ctx.fillStyle=colorScale(v,d.min,d.max);ctx.fillRect(lx,ly+i,lw,1);}
     ctx.strokeStyle="rgba(150,168,186,.75)";ctx.lineWidth=1;ctx.strokeRect(lx-.5,ly-.5,lw+1,lh+1);
-    text(ctx,fmt(d.max,4),lx-6,ly,"#5b6b80","right",'9.5px "Microsoft YaHei"');
-    text(ctx,fmt(d.min,4),lx-6,ly+lh,"#5b6b80","right",'9.5px "Microsoft YaHei"');
+    text(ctx,fmt(d.max,1),lx-6,ly,"#5b6b80","right",'9.5px "Microsoft YaHei"');
+    text(ctx,fmt(d.min,1),lx-6,ly+lh,"#5b6b80","right",'9.5px "Microsoft YaHei"');
     text(ctx,activeResponseName(),lx+lw/2,ly-12,"#5b6b80","center",'9.5px "Microsoft YaHei"');
   }
 }
@@ -2183,7 +2184,7 @@ function contourSegments(v0,v1,v2,v3,level){
   if(edges.length===2)return [[edges[0],edges[1]]];if(edges.length===4)return [[edges[0],edges[1]],[edges[2],edges[3]]];return [];
 }
 function drawContour(){
-  const canvas=$("#contourCanvas");if(!state.fit||state.factors.length<2)return noPlot(canvas,"至少需要两个因子和可用模型");
+  const canvas=$("#contourCanvas");if(!state.fit||state.factors.filter((f,i)=>!isBallFactor(i)).length<2)return noPlot(canvas,"曲面图需要两个连续因子；球种请用主效应图比较");
   const d=responseGrid(45),{ctx,w,h}=prepCanvas(canvas,340),L=60,R=30,T=22,B=50,pw=w-L-R,ph=h-T-B,cw=pw/(d.n-1),ch=ph/(d.n-1);
   for(let j=0;j<d.n-1;j++)for(let i=0;i<d.n-1;i++){const avg=(d.grid[j][i]+d.grid[j][i+1]+d.grid[j+1][i]+d.grid[j+1][i+1])/4;ctx.fillStyle=colorScale(avg,d.min,d.max,1);ctx.fillRect(L+i*cw,T+(d.n-2-j)*ch,cw+1.2,ch+1.2);}
   const levels=Array.from({length:9},(_,i)=>d.min+(d.max-d.min)*(i+1)/10);
@@ -2204,8 +2205,8 @@ function drawContour(){
   for(let g=0;g<=4;g++){const x=L+pw*g/4,y=T+ph*(4-g)/4;
     line(ctx,x,h-B,x,h-B+5,"#8b9aac",1);
     line(ctx,L-5,y,L,y,"#8b9aac",1);
-    text(ctx,fmt(natAt(d.ix,g),3),x,h-B+19,"#5b6b80","center",'11px "Microsoft YaHei"');
-    text(ctx,fmt(natAt(d.iy,g),3),L-8,y,"#5b6b80","right",'11px "Microsoft YaHei"');
+    text(ctx,fmt(natAt(d.ix,g),1),x,h-B+19,"#5b6b80","center",'11px "Microsoft YaHei"');
+    text(ctx,fmt(natAt(d.iy,g),1),L-8,y,"#5b6b80","right",'11px "Microsoft YaHei"');
   }
   text(ctx,state.factors[d.ix].name,L+pw/2,h-11,"#344054","center",'11.5px "Microsoft YaHei"');
   ctx.save();ctx.translate(15,T+ph/2);ctx.rotate(-Math.PI/2);text(ctx,state.factors[d.iy].name,0,0,"#344054","center",'11.5px "Microsoft YaHei"');ctx.restore();
@@ -2497,7 +2498,7 @@ function drawOptimizerProfileRow(canvas,item,best){
   const optPred=predictWithFit(item.fit,z);
   const curves=[];let yMin=Infinity,yMax=-Infinity;
   state.factors.forEach((factor,fi)=>{
-    const curve=[];const points=121;
+    const curve=[];const points=isBallFactor(fi)?2:121;
     for(let i=0;i<points;i++){
       const code=-1+2*i/(points-1),zz=[...z];zz[fi]=code;
       const x=factor.low+(factor.high-factor.low)*i/(points-1);
@@ -2530,12 +2531,12 @@ function drawOptimizerProfileRow(canvas,item,best){
     for(let g=1;g<4;g++)line(ctx,boxL+2,T+ph*g/4,boxR-2,T+ph*g/4,"#e3e9f0",.8);
     ctx.save();rrect(ctx,boxL,T,boxW,ph,8);ctx.strokeStyle="rgba(163,180,198,.75)";ctx.lineWidth=1;ctx.stroke();ctx.restore();
     const tickY=T+ph+15,midV=(factor.low+factor.high)/2;
-    text(ctx,fmt(factor.low,4),boxL-1,tickY,"#5b6b80","left",'9.5px "Microsoft YaHei"');
-    text(ctx,fmt(midV,4),boxL+boxW/2,tickY,"#5b6b80","center",'9.5px "Microsoft YaHei"');
-    text(ctx,fmt(factor.high,4),boxR+1,tickY,"#5b6b80","right",'9.5px "Microsoft YaHei"');
+    text(ctx,factorLevelLabel(fi,factor.low),boxL-1,tickY,"#5b6b80","left",'9.5px "Microsoft YaHei"');
+    text(ctx,isBallFactor(fi)?"":fmt(midV,1),boxL+boxW/2,tickY,"#5b6b80","center",'9.5px "Microsoft YaHei"');
+    text(ctx,factorLevelLabel(fi,factor.high),boxR+1,tickY,"#5b6b80","right",'9.5px "Microsoft YaHei"');
     line(ctx,boxL,T+ph,boxL,T+ph+3,"#c3cfdb",1);line(ctx,boxL+boxW/2,T+ph,boxL+boxW/2,T+ph+3,"#c3cfdb",1);line(ctx,boxR,T+ph,boxR,T+ph+3,"#c3cfdb",1);
     text(ctx,factor.name,px+panelW/2,T-20,"#24384f","center",'bold 11.5px "Microsoft YaHei"');
-    text(ctx,"当前 "+fmt(factor.low+(factor.high-factor.low)*(z[fi]+1)/2,5),px+panelW/2,T-6,"#1a6fd4","center",'9.5px "Microsoft YaHei"');
+    text(ctx,"当前 "+factorLevelLabel(fi,factor.low+(factor.high-factor.low)*(z[fi]+1)/2),px+panelW/2,T-6,"#1a6fd4","center",'9.5px "Microsoft YaHei"');
     if(fi===0)for(let g=0;g<=4;g++){const y=T+ph*g/4,v=minY+(maxY-minY)*(4-g)/4;
       text(ctx,fmt(v,4),boxL-6,y,"#6b7c90","right",'9.5px "Microsoft YaHei"');}
     const cg=ctx.createLinearGradient(0,T,0,T+ph);
@@ -2559,7 +2560,7 @@ function drawOptimizerProfileRow(canvas,item,best){
     ctx.beginPath();ctx.moveTo(optX-2.6,T+11);ctx.lineTo(optX+2.6,T+11);ctx.stroke();
     ctx.beginPath();ctx.moveTo(optX-2.6,T+11);ctx.lineTo(optX-1.1,T+9.7);ctx.moveTo(optX-2.6,T+11);ctx.lineTo(optX-1.1,T+12.3);
     ctx.moveTo(optX+2.6,T+11);ctx.lineTo(optX+1.1,T+9.7);ctx.moveTo(optX+2.6,T+11);ctx.lineTo(optX+1.1,T+12.3);ctx.stroke();
-    if(fi===0)text(ctx,"ŷ = "+fmt(optPred,4),boxL+2,optY-10,"#0a7a75","left",'9.5px "Microsoft YaHei"');
+    if(fi===0)text(ctx,"ŷ = "+fmt(optPred,1),boxL+2,optY-10,"#0a7a75","left",'9.5px "Microsoft YaHei"');
   });
 }
 
@@ -2576,7 +2577,7 @@ function renderOptimizerProfiles(best,items){
       <div class="profile-info">
         <div class="profile-info-name">${esc(item.response.name)}</div>
         <div class="profile-info-goal">目标：${goal}</div>
-        <div class="profile-info-y" id="olf_y_${ri}">ŷ = ${fmt(pred.y,3)}</div>
+        <div class="profile-info-y" id="olf_y_${ri}">ŷ = ${fmt(pred.y,1)}</div>
         <div class="profile-info-d" id="olf_d_${ri}">d = ${fmt(pred.d,3)}</div>
         <div class="profile-dbar"><i id="olf_bar_${ri}" style="width:${pct}%"></i></div>
       </div>
@@ -2599,7 +2600,7 @@ function renderOptimizerHeader(best,natural){
     <div class="opt-factor-bars">${state.factors.map((f,i)=>{
       const high=naturalFromCode(state.factors.map((_,j)=>j===i?1:0),state.factors)[i];
       const low=naturalFromCode(state.factors.map((_,j)=>j===i?-1:0),state.factors)[i];
-      return `<div class="opt-factor-col"><div class="opt-factor-name">${esc(f.name)}</div><div class="opt-factor-values"><div class="opt-factor-high">${fmt(high,4)}</div><div class="opt-factor-cur">[${fmt(natural[i],4)}]</div><div class="opt-factor-low">${fmt(low,4)}</div></div></div>`;
+      return `<div class="opt-factor-col"><div class="opt-factor-name">${esc(f.name)}</div><div class="opt-factor-values"><div class="opt-factor-high">${esc(factorLevelLabel(i,high))}</div><div class="opt-factor-cur">[${esc(factorLevelLabel(i,natural[i]))}]</div><div class="opt-factor-low">${esc(factorLevelLabel(i,low))}</div></div></div>`;
     }).join("")}</div>`;
 }
 function optimizeResponses(){
@@ -2622,8 +2623,8 @@ function optimizeResponses(){
     $("#optimizerResult").innerHTML=`<div class="optimizer-score-label">综合最优解 · 总体期望度</div>
       <div class="optimizer-score-row"><div class="desirability">${fmt(best.score,4)}</div><div class="optimizer-grade">${grade}</div></div>
       <div class="desirability-track"><div class="desirability-fill" style="width:${pct}%"></div></div>
-      <div class="solution-list">${state.factors.map((f,i)=>`<div class="solution-item"><b>${esc(f.name)}</b><span class="solution-value">${fmt(natural[i],6)}</span><span class="solution-code">编码 ${fmt(best.z[i],3)}</span></div>`).join("")}</div>
-      <div class="response-predictions">${best.preds.map(p=>`<div class="prediction-row"><span class="prediction-name">${esc(p.name)}</span><span class="prediction-y">${fmt(p.y,6)}</span><span class="prediction-d">d=${fmt(p.d,3)}</span><span class="prediction-bar"><i style="width:${clamp((p.d||0)*100,0,100).toFixed(1)}%"></i></span></div>`).join("")}</div>`;
+      <div class="solution-list">${state.factors.map((f,i)=>`<div class="solution-item"><b>${esc(f.name)}</b><span class="solution-value">${factorLevelLabel(i,natural[i])}</span><span class="solution-code">编码 ${fmt(best.z[i],3)}</span></div>`).join("")}</div>
+      <div class="response-predictions">${best.preds.map(p=>`<div class="prediction-row"><span class="prediction-name">${esc(p.name)}</span><span class="prediction-y">${fmt(p.y,1)}</span><span class="prediction-d">d=${fmt(p.d,3)}</span><span class="prediction-bar"><i style="width:${clamp((p.d||0)*100,0,100).toFixed(1)}%"></i></span></div>`).join("")}</div>`;
     optimizerLive={z:best.z.slice(),items:items,best:best};
     const rb=$("#resetOptBtn");if(rb)rb.classList.remove("hidden");
     renderOptimizerHeader(best,natural);renderOptimizerProfiles(best,items);lastOptimizerResult={best,items};
@@ -2697,14 +2698,14 @@ function refreshOptimizerLive(){
   optimizerLive.items.forEach((item,ri)=>{
     const pred=sc.preds[ri];if(!pred)return;
     const yEl=document.querySelector("#olf_y_"+ri),dEl=document.querySelector("#olf_d_"+ri),bEl=document.querySelector("#olf_bar_"+ri);
-    if(yEl)yEl.textContent="ŷ = "+fmt(pred.y,3);
+    if(yEl)yEl.textContent="ŷ = "+fmt(pred.y,1);
     if(dEl)dEl.textContent="d = "+fmt(pred.d,3);
     if(bEl)bEl.style.width=clamp((pred.d||0)*100,0,100).toFixed(1)+"%";
   });
   const nat=naturalFromCode(z,state.factors);
   document.querySelectorAll("#optimizerHeader .opt-factor-col").forEach((col,i)=>{
     const cur=col.querySelector(".opt-factor-cur");
-    if(cur&&i<nat.length)cur.textContent="["+fmt(nat[i],4)+"]";
+    if(cur&&i<nat.length)cur.textContent="["+factorLevelLabel(i,nat[i])+"]";
   });
   const dv=document.querySelector("#optimizerHeader .opt-d-value");
   if(dv)dv.textContent="D: "+fmt(sc.score,4);
@@ -2869,13 +2870,13 @@ function loadSample(){
 }
 async function copyTable(){
   if(!state.runs.length)return;let txt=["标准序","运行序","类型","区组",...state.factors.map(f=>f.name),...state.responses.map(r=>r.name)].join("\t")+"\n";
-  [...state.runs].sort((a,b)=>a.run-b.run).forEach(r=>txt+=[r.std,r.run,r.kind,r.block,...r.x,...r.ys.map(v=>v??"")].join("\t")+"\n");
+  [...state.runs].sort((a,b)=>a.run-b.run).forEach(r=>txt+=[r.std,r.run,r.kind,r.block,...r.x.map((v,i)=>factorLevelLabel(i,v)),...r.ys.map(v=>Number.isFinite(v)?v.toFixed(1):"")].join("\t")+"\n");
   try{await navigator.clipboard.writeText(txt);$("#notice").innerHTML="<span>✓</span><div>实验表已复制，可直接粘贴到 Excel。</div>";}catch{alert("浏览器未允许剪贴板访问，请使用导出 CSV。");}
 }
 function downloadCSV(includeY,filename){
   if(!state.runs.length)generateDesign();if(!state.runs.length)return;const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
   let csv="\uFEFF"+["标准序","运行序","类型","区组",...state.factors.map(f=>f.name),...state.responses.map(r=>r.name)].map(q).join(",")+"\r\n";
-  [...state.runs].sort((a,b)=>a.run-b.run).forEach(r=>csv+=[r.std,r.run,r.kind,r.block,...r.x,...state.responses.map((_,i)=>includeY?(r.ys[i]??""):"")].map(q).join(",")+"\r\n");
+  [...state.runs].sort((a,b)=>a.run-b.run).forEach(r=>csv+=[r.std,r.run,r.kind,r.block,...r.x.map((v,i)=>factorLevelLabel(i,v)),...state.responses.map((_,i)=>includeY&&Number.isFinite(r.ys[i])?r.ys[i].toFixed(1):"")].map(q).join(",")+"\r\n");
   const blob=new Blob([csv],{type:"text/csv;charset=utf-8"}),url=URL.createObjectURL(blob),a=document.createElement("a");
   a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -2951,8 +2952,8 @@ $("#activeResponseSelect").addEventListener("change",()=>{
   syncActiveY();renderRunTable();
   if(completeRows().length===state.runs.length)analyze();else hideAnalysis();
 });
-$("#surfaceX").addEventListener("change",()=>{if($("#surfaceX").value===$("#surfaceY").value){$("#surfaceY").value=String((Number($("#surfaceX").value)+1)%state.factors.length);}if(state.fit){drawSurface();drawContour();}});
-$("#surfaceY").addEventListener("change",()=>{if($("#surfaceX").value===$("#surfaceY").value){$("#surfaceX").value=String((Number($("#surfaceY").value)+1)%state.factors.length);}if(state.fit){drawSurface();drawContour();}});
+$("#surfaceX").addEventListener("change",()=>{if($("#surfaceX").value===$("#surfaceY").value){$("#surfaceY").value=String(state.factors.map((f,i)=>i).find(i=>!isBallFactor(i)&&i!==Number($("#surfaceX").value)));}if(state.fit){drawSurface();drawContour();}});
+$("#surfaceY").addEventListener("change",()=>{if($("#surfaceX").value===$("#surfaceY").value){$("#surfaceX").value=String(state.factors.map((f,i)=>i).find(i=>!isBallFactor(i)&&i!==Number($("#surfaceY").value)));}if(state.fit){drawSurface();drawContour();}});
 $("#resetSurfaceBtn").addEventListener("click",resetSurfaceView);
 $("#optimizeBtn").addEventListener("click",optimizeResponses);
 $("#steepBtn").addEventListener("click",openSteepestAscent);
@@ -4795,7 +4796,7 @@ let catReady=false,catSession=crypto.randomUUID?crypto.randomUUID():String(Date.
 let catConfig={mode:'screen',map:[5,0,3],fixed:[160,110,420,200,200,0]},catImport=null;
 const catPanel=document.createElement('section');catPanel.id='catapultLink';catPanel.innerHTML=`<h2>投射器联动实验 / Catapult DOE</h2><div class="cat-toolbar"><label>实验路线 <select id="catPreset"><option value="screen">球种 × 释放角 × 定位销 · 2³重复两轮（16次）</option><option value="curve">球杯高度 × 释放角 × 定位销 · 2³＋3中心（11次）</option></select></label><button id="catBuild">创建投射器实验</button><button id="catCollect">自动采集未完成数据</button><button id="catAppend">保留11次，追加6轴点 CCC</button><button id="catStop">完成本发后停止</button></div><div class="cat-toolbar"><label>弹性系数 CV % <input id="catCV" type="number" min="0" max="10" step=".1" value="0.5"></label><label>初始随机种子 <input id="catSeed" type="number" min="1" max="2147483646" value="2026"></label><label><input id="catAnimate" type="checkbox">逐发显示慢镜头（较慢）</label><label><input id="catNewBlock" type="checkbox" checked>6个轴点记为新增阶段区组（不施加漂移）</label></div><p id="catFixed" class="hint"></p><p id="catStatus" role="status">连接同目录的投射器中…</p><p class="hint">距离来自投射器首次落地，不用统计方程反造数据。分类球种仅取乒乓球/高尔夫球，不设置分类中心点。曲率与区组P值由数据计算；不会强制显著或不显著。</p><details id="catRig" open><summary>展开投射器 · 可操作、发射与确认验证</summary><iframe id="catapultFrame" src="DOE_Catapult_Competition.html#embedded" title="与DOE共用物理模型的投射器"></iframe></details><div class="cat-toolbar"><button id="catValidate">用优化设置做5次独立验证</button><button id="catSend">载入优化设置到投射器</button><button id="catSaveJSON">导出联动实验包</button><label>导入实验包 <input id="catLoadJSON" type="file" accept=".json,application/json"></label><button id="catSync">从投射器继续分析当前数据</button></div><p id="catValidation" role="status"></p>`;
 document.querySelector('header').after(catPanel);
-const catCSS=document.createElement('style');catCSS.textContent='#catapultLink{max-width:1500px;margin:18px auto;padding:20px;border:1px solid #c9dce9;background:white;border-radius:8px;font-family:"Microsoft YaHei","微软雅黑",sans-serif}#catapultLink h2{margin:0 0 12px;color:#004a7c}.cat-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}.cat-toolbar label{display:flex;align-items:center;gap:6px}.cat-toolbar button,.cat-toolbar input,.cat-toolbar select{font:inherit;padding:7px;border:1px solid #c9dce9;border-radius:5px}.cat-toolbar button{cursor:pointer;background:#edf5fb;color:#004a7c}.cat-toolbar input[type=number]{width:100px}#catapultFrame{width:100%;height:820px;border:1px solid #d5e2eb;margin-top:12px}#catStatus,#catValidation{white-space:pre-line;color:#135f75}#catapultLink details{margin-top:10px}@media(max-width:760px){#catapultLink{margin:10px;padding:12px}.cat-toolbar select{max-width:100%;width:100%}.cat-toolbar label{flex-wrap:wrap}}';document.head.append(catCSS);
+const catCSS=document.createElement('style');catCSS.textContent='#catapultLink{max-width:1500px;margin:18px auto;padding:20px;border:1px solid #c9dce9;background:white;border-radius:8px;font-family:"Microsoft YaHei","微软雅黑",sans-serif}#catapultLink h2{margin:0 0 12px;color:#004a7c}.cat-toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}.cat-toolbar label{display:flex;align-items:center;gap:6px}.cat-toolbar button,.cat-toolbar input,.cat-toolbar select{font:inherit;padding:7px;border:1px solid #c9dce9;border-radius:5px}.cat-toolbar button{cursor:pointer;background:#edf5fb;color:#004a7c}.cat-toolbar input[type=number]{width:100px}#catapultFrame{width:100%;height:1040px;border:1px solid #d5e2eb;margin-top:12px}#catStatus,#catValidation{white-space:pre-line;color:#135f75}#catapultLink details{margin-top:10px}@media(max-width:760px){#catapultLink{margin:10px;padding:12px}.cat-toolbar select{max-width:100%;width:100%}.cat-toolbar label{flex-wrap:wrap}}';document.head.append(catCSS);
 const catEl=id=>document.getElementById(id),catStatus=text=>catEl('catStatus').textContent=text;
 function catRPC(command,payload={}){return new Promise((resolve,reject)=>{const id=++catSequence,timer=setTimeout(()=>{catPending.delete(id);reject(Error('投射器响应超时；请确认两个HTML在同一文件夹并重新连接。'))},90000);catPending.set(id,{resolve,reject,timer});catEl('catapultFrame').contentWindow.postMessage({protocol:'CATAPULT_DOE_V1',session:catSession,id,command,...payload},'*')})}
 window.addEventListener('message',e=>{const d=e.data;if(e.source!==catEl('catapultFrame').contentWindow||!d||d.protocol!=='CATAPULT_DOE_V1'||d.session!==catSession)return;const p=catPending.get(d.id);if(!p)return;clearTimeout(p.timer);catPending.delete(d.id);d.ok?p.resolve(d.result):p.reject(Error(d.result))});
@@ -4804,16 +4805,16 @@ function catTarget(){const t=Number(activeResponse()?.target);return Number.isFi
 function catSettings(x){const v=[...catConfig.fixed];catConfig.map.forEach((index,i)=>{v[index]=x[i];if(index===5)v[index]=Math.round(v[index])});return v}
 function catCheckRows(rows){for(const r of rows){const v=catSettings(r.x),bounds=[[100,180],[90,120],[200,420],[0,200],[100,200],[0,1]];if(v.some((a,i)=>!Number.isFinite(a)||a<bounds[i][0]-1e-8||a>bounds[i][1]+1e-8)||v[0]<=v[1]||v[4]>v[2])throw Error('实验点超出投射器可调范围，请缩小实际水平再采集（不截断或替换实验点）。');if(catConfig.map.includes(5)&&r.x[catConfig.map.indexOf(5)]!==0&&r.x[catConfig.map.indexOf(5)]!==1)throw Error('球种不允许中心/轴点：请切换三个连续因子的11次路线。')}}
 function catSnapshot(){return {version:1,mode:catConfig.mode,selected:[...state.selected],type:$('#designType').value,factors:state.factors.map((f,i)=>({...f,physicalIndex:catConfig.map[i],categorical:catConfig.map[i]===5})),fixed:[...catConfig.fixed],cv:catNumber('catCV',0,10),seed:catSeed,target:catTarget(),rows:state.runs.map(r=>({...r,ys:undefined,y:r.y,settings:r._physical||catSettings(r.x)})),upgrade:state.upgrade||null}}
-function catRefresh(){catEl('catFixed').textContent=catConfig.mode==='curve'?'固定条件：乒乓球、开火角110°、绳挂点180 mm。CCC轴点仍在机械范围内。':catConfig.mode==='screen'?'固定条件：开火角110°、球杯420 mm、绳挂点200 mm；球种编码0=乒乓球，1=高尔夫球。':'导入数据保留原物理设置。';catEl('catAppend').disabled=catConfig.mode!=='curve'||state.runs.length!==11||state.runs.some(r=>!Number.isFinite(r.y));state.fits=Array(state.responses.length).fill(null);syncActiveY();renderActiveResponseSelect();renderResponseTabs();renderRunTable();renderModelTerms();renderOptimizerSettings();clearOptimizerProfiles();$('#modelCard').classList.remove('hidden');syncDesignTiles();updateDesignControls();updateDesignMeta();renderUpgradeCard();renderPending();updateTopStrip();if(state.runs.length&&state.runs.every(r=>Number.isFinite(r.y)))analyze()}
+function catRefresh(){catEl('catFixed').textContent=catConfig.mode==='curve'?'固定条件：乒乓球、开火角110°、绳挂点180 mm。CCC轴点仍在机械范围内。':catConfig.mode==='screen'?'固定条件：开火角110°、球杯420 mm、绳挂点200 mm；球种：乒乓球／高尔夫球。':'导入数据保留原物理设置。';catEl('catAppend').disabled=catConfig.mode!=='curve'||state.runs.length!==11||state.runs.some(r=>!Number.isFinite(r.y));state.fits=Array(state.responses.length).fill(null);syncActiveY();renderActiveResponseSelect();renderResponseTabs();renderRunTable();renderModelTerms();renderOptimizerSettings();clearOptimizerProfiles();$('#modelCard').classList.remove('hidden');syncDesignTiles();updateDesignControls();updateDesignMeta();renderUpgradeCard();renderPending();updateTopStrip();if(state.runs.length&&state.runs.every(r=>Number.isFinite(r.y)))analyze()}
 function catBuild(mode=catEl('catPreset').value){if(catBusy)return;catGeneration++;catConfig=mode==='curve'?{mode,map:[2,0,3],fixed:[147.5,110,310,150,180,0]}:{mode:'screen',map:[5,0,3],fixed:[160,110,420,180,200,0]};
- const levels=mode==='curve'?[[270,350],[135,160],[130,170]]:[[0,1],[145,175],[160,200]],names=mode==='curve'?['球杯高度 / mm','释放角 / °','定位销刻度']:['球的种类（0乒乓/1高尔夫）','释放角 / °','定位销刻度'];
+ window.__catPhysicalMap=[...catConfig.map];const levels=mode==='curve'?[[270,350],[135,160],[130,170]]:[[0,1],[145,175],[160,200]],names=mode==='curve'?['球杯高度 / mm','释放角 / °','定位销刻度']:['球的种类','释放角 / °','定位销刻度'];
  state.factors=levels.map(([low,high],i)=>({name:names[i],low,high,categorical:catConfig.map[i]===5}));state.responses=[{id:'Y1',name:'Y1 首次落地距离 / cm',goal:'target',target:300,lower:285,upper:315,weight:1,enabled:true}];state.activeResponse=0;state.runs=[];
  $('#factorCount').value=3;$('#responseCount').value=1;$('#replicates').value=mode==='curve'?1:2;$('#centerPoints').value=mode==='curve'?3:0;$('#blockCount').value=1;$('#designType').value=mode==='curve'?'fullCenter':'full';$('#factorEditor').innerHTML='';renderFactorEditor();$('#responseEditor').innerHTML='';renderResponseEditor();generateDesign();state.factors.forEach((f,i)=>f.categorical=catConfig.map[i]===5);catSeed=Math.round(catNumber('catSeed',1,2147483646));catStatus('已创建 '+state.runs.length+' 次投射器实验。点击自动采集；也可修改实际水平。');catRefresh()}
-async function catCollect(){if(catBusy)return;if(!catReady)throw Error('投射器尚未连接');const generation=catGeneration;catCheckRows(state.runs);const cv=catNumber('catCV',0,10);catBusy=true;catStop=false;catLock(true);try{for(const r of state.runs){if(catStop||generation!==catGeneration)break;if(Number.isFinite(r.y))continue;catStatus('自动采集 '+r.run+' / '+state.runs.length+'：'+state.factors.map((f,i)=>f.name+'='+r.x[i]).join('，'));const v=await catRPC('SIMULATE',{settings:catSettings(r.x),cv,seed:catSeed,animate:catEl('catAnimate').checked,target:catTarget()});r.y=v.distance;r.ys=[v.distance];r._physical=v.settings;r.seedBefore=v.seedBefore;r.seedAfter=v.seedAfter;r.cv=cv;r.measurement=v.measurement;r.physics=v.physics;catSeed=v.seedAfter;renderRunTable();await new Promise(resolve=>setTimeout(resolve,0))}catRefresh();await catRPC('STORE',{experiment:catSnapshot()});catStatus((catStop?'已停止，':'采集完成，')+state.runs.filter(r=>Number.isFinite(r.y)).length+' / '+state.runs.length+' 条首次落地实测数据。原始双精度数值已保留，CSV可导出。')}finally{catBusy=false;catLock(false)}}
+async function catCollect(){if(catBusy)return;if(!catReady)throw Error('投射器尚未连接');const generation=catGeneration;catCheckRows(state.runs);const cv=catNumber('catCV',0,10);catBusy=true;catStop=false;catLock(true);try{for(const r of state.runs){if(catStop||generation!==catGeneration)break;if(Number.isFinite(r.y))continue;catStatus('自动采集 '+r.run+' / '+state.runs.length+'：'+state.factors.map((f,i)=>f.name+'='+factorLevelLabel(i,r.x[i])).join('，'));const v=await catRPC('SIMULATE',{settings:catSettings(r.x),cv,seed:catSeed,animate:catEl('catAnimate').checked,target:catTarget()});r.y=v.distance;r.ys=[v.distance];r._physical=v.settings;r.seedBefore=v.seedBefore;r.seedAfter=v.seedAfter;r.cv=cv;r.measurement=v.measurement;r.physics=v.physics;catSeed=v.seedAfter;renderRunTable();await new Promise(resolve=>setTimeout(resolve,0))}catRefresh();await catRPC('STORE',{experiment:catSnapshot()});catStatus((catStop?'已停止，':'采集完成，')+state.runs.filter(r=>Number.isFinite(r.y)).length+' / '+state.runs.length+' 条首次落地实测数据。表格与CSV显示1位小数，实验包保留原始精度。')}finally{catBusy=false;catLock(false)}}
 async function catAppend(){if(catBusy)return;if(catConfig.mode!=='curve'||state.runs.length!==11||!state.runs.every(r=>Number.isFinite(r.y)))throw Error('请先完成三连续因子的11次实验，再追加6轴点。');const stage1=curvatureStats(),alpha=Math.pow(8,.25),block=catEl('catNewBlock').checked?2:1,start=state.runs.length;let added=[];for(let i=0;i<3;i++)for(const sign of [-1,1]){const z=[0,0,0];z[i]=sign*alpha;added.push({z,kind:'axial',rep:1,block,isNew:true,ys:[null],y:null,x:naturalFromCode(z,state.factors)})}catCheckRows(added);if($('#randomize').checked)added=shuffled(added);added.forEach((r,i)=>{r.std=start+i+1;r.run=start+i+1});state.runs.push(...added);state.upgrade={augmented:true,method:'ccc',alpha,addedRuns:6,newBlock:block===2,blockNo:block,stage1,reps:1,axialRuns:6,centerAdded:0,hasAxial:true,prevBlocks:1,prevRuns:11};$('#designType').value='ccc';$('#blockCount').value=block;buildDefaultSelection('ccc');catRefresh();await catCollect()}
 function catValidationSettings(){let z=optimizerLive?.z||lastOptimizerResult?.best?.z;if(!z)z=state.factors.map(()=>0);z=z.map((v,i)=>catConfig.map[i]===5?(v<0?-1:1):v);return {x:naturalFromCode(z,state.factors),z}}
-async function catValidate(count=5){if(catBusy||!catReady)return;if(!state.fit)throw Error('请先完成实验并分析，再进行独立验证。');const point=catValidationSettings();catCheckRows([{x:point.x}]);catBusy=true;catLock(true);try{const predicted=state.fit?predictAt(point.z):NaN,ys=[];for(let i=0;i<count;i++){const v=await catRPC('SIMULATE',{settings:catSettings(point.x),cv:catNumber('catCV',0,10),seed:catSeed,animate:catEl('catAnimate').checked,target:catTarget(),validation:true});catSeed=v.seedAfter;ys.push(v.distance);catEl('catValidation').textContent='独立验证 '+ys.length+'/'+count+'：'+ys.map(y=>fmt(y,3)).join('，')+' cm'}const average=ys.reduce((a,b)=>a+b,0)/ys.length;catEl('catValidation').textContent+='\n模型预测 '+fmt(predicted,3)+' cm；验证均值 '+fmt(average,3)+' cm；目标'+catTarget()+'±15 cm，命中 '+ys.filter(y=>Math.abs(y-catTarget())<=15).length+'/'+ys.length+'。验证不加入训练数据。';return {ys,predicted,average}}finally{catBusy=false;catLock(false)}}
-function catImportExperiment(data){if(!data||data.version!==1||!Array.isArray(data.factors)||!Array.isArray(data.rows)||data.rows.length>2000||data.factors.length<2||data.factors.length>15)throw Error('实验包格式无效');if(!Array.isArray(data.fixed)||data.fixed.length!==6||data.fixed.some(v=>!Number.isFinite(v))||new Set(data.factors.map(f=>f.physicalIndex)).size!==data.factors.length)throw Error('物理设置缺失或重复映射');if(data.rows.some(r=>!Array.isArray(r.x)||!Array.isArray(r.z)||r.x.length!==data.factors.length||r.z.length!==data.factors.length||[...r.x,...r.z].some(v=>!Number.isFinite(v))||(r.y!=null&&!Number.isFinite(r.y))||['block','rep','std'].some(k=>r[k]!=null&&(!Number.isInteger(r[k])||r[k]<1||r[k]>10000))||(r.settings!=null&&(!Array.isArray(r.settings)||r.settings.length!==6||r.settings.some(v=>!Number.isFinite(v))))||!['factorial','center','axial'].includes(r.kind)))throw Error('实验行格式无效');if(data.factors.some(f=>!Number.isFinite(f.low)||!Number.isFinite(f.high)||f.low>=f.high||!Number.isInteger(f.physicalIndex)||f.physicalIndex<0||f.physicalIndex>5))throw Error('实验因子映射无效');catGeneration++;catConfig={mode:data.factors.map(f=>f.physicalIndex).join()==='2,0,3'?'curve':data.factors.map(f=>f.physicalIndex).join()==='5,0,3'?'screen':'import',map:data.factors.map(f=>f.physicalIndex),fixed:data.fixed};state.factors=data.factors.map(f=>({...f}));state.responses=[{id:'Y1',name:'Y1 首次落地距离 / cm',goal:'target',target:300,lower:285,upper:315,weight:1,enabled:true}];state.activeResponse=0;state.runs=data.rows.map((r,i)=>({...r,run:i+1,std:r.std||i+1,rep:r.rep||1,block:r.block||1,ys:[Number.isFinite(r.y)?r.y:null],y:Number.isFinite(r.y)?r.y:null,_physical:r.settings}));state.upgrade=data.upgrade||null;$('#factorCount').value=state.factors.length;$('#responseCount').value=1;$('#factorEditor').innerHTML='';renderFactorEditor();$('#responseEditor').innerHTML='';renderResponseEditor();$('#designType').value=['full','fullCenter','ccc','ccf'].includes(data.type)?data.type:'full';$('#blockCount').value=Math.max(1,...state.runs.map(r=>r.block));buildDefaultSelection($('#designType').value);if(Array.isArray(data.selected))state.selected=new Set(data.selected.filter(k=>allCandidateTerms($('#designType').value).some(t=>keyOf(t)===k)));catSeed=Number.isInteger(data.seed)&&data.seed>0&&data.seed<=4294967295?data.seed:2026;if(Number.isFinite(data.target)){state.responses[0].target=data.target;state.responses[0].lower=data.target-15;state.responses[0].upper=data.target+15}catEl('catCV').value=data.cv??.5;catRefresh();catStatus('已从投射器载入 '+state.runs.length+' 条数据及完整物理设置；未重新生成响应。')}
+async function catValidate(count=5){if(catBusy||!catReady)return;if(!state.fit)throw Error('请先完成实验并分析，再进行独立验证。');const point=catValidationSettings();catCheckRows([{x:point.x}]);catBusy=true;catLock(true);try{const predicted=state.fit?predictAt(point.z):NaN,ys=[];for(let i=0;i<count;i++){const v=await catRPC('SIMULATE',{settings:catSettings(point.x),cv:catNumber('catCV',0,10),seed:catSeed,animate:catEl('catAnimate').checked,target:catTarget(),validation:true});catSeed=v.seedAfter;ys.push(v.distance);catEl('catValidation').textContent='独立验证 '+ys.length+'/'+count+'：'+ys.map(y=>fmt(y,1)).join('，')+' cm'}const average=ys.reduce((a,b)=>a+b,0)/ys.length;catEl('catValidation').textContent+='\n模型预测 '+fmt(predicted,1)+' cm；验证均值 '+fmt(average,1)+' cm；目标'+catTarget()+'±15 cm，命中 '+ys.filter(y=>Math.abs(y-catTarget())<=15).length+'/'+ys.length+'。验证不加入训练数据。';return {ys,predicted,average}}finally{catBusy=false;catLock(false)}}
+function catImportExperiment(data){if(!data||data.version!==1||!Array.isArray(data.factors)||!Array.isArray(data.rows)||data.rows.length>2000||data.factors.length<2||data.factors.length>15)throw Error('实验包格式无效');if(!Array.isArray(data.fixed)||data.fixed.length!==6||data.fixed.some(v=>!Number.isFinite(v))||new Set(data.factors.map(f=>f.physicalIndex)).size!==data.factors.length)throw Error('物理设置缺失或重复映射');if(data.rows.some(r=>!Array.isArray(r.x)||!Array.isArray(r.z)||r.x.length!==data.factors.length||r.z.length!==data.factors.length||[...r.x,...r.z].some(v=>!Number.isFinite(v))||(r.y!=null&&!Number.isFinite(r.y))||['block','rep','std'].some(k=>r[k]!=null&&(!Number.isInteger(r[k])||r[k]<1||r[k]>10000))||(r.settings!=null&&(!Array.isArray(r.settings)||r.settings.length!==6||r.settings.some(v=>!Number.isFinite(v))))||!['factorial','center','axial'].includes(r.kind)))throw Error('实验行格式无效');if(data.factors.some(f=>!Number.isFinite(f.low)||!Number.isFinite(f.high)||f.low>=f.high||!Number.isInteger(f.physicalIndex)||f.physicalIndex<0||f.physicalIndex>5))throw Error('实验因子映射无效');catGeneration++;catConfig={mode:data.factors.map(f=>f.physicalIndex).join()==='2,0,3'?'curve':data.factors.map(f=>f.physicalIndex).join()==='5,0,3'?'screen':'import',map:data.factors.map(f=>f.physicalIndex),fixed:data.fixed};window.__catPhysicalMap=[...catConfig.map];state.factors=data.factors.map(f=>({...f,name:f.physicalIndex===5?'球的种类':f.name}));state.responses=[{id:'Y1',name:'Y1 首次落地距离 / cm',goal:'target',target:300,lower:285,upper:315,weight:1,enabled:true}];state.activeResponse=0;state.runs=data.rows.map((r,i)=>({...r,run:i+1,std:r.std||i+1,rep:r.rep||1,block:r.block||1,ys:[Number.isFinite(r.y)?r.y:null],y:Number.isFinite(r.y)?r.y:null,_physical:r.settings}));state.upgrade=data.upgrade||null;$('#factorCount').value=state.factors.length;$('#responseCount').value=1;$('#factorEditor').innerHTML='';renderFactorEditor();$('#responseEditor').innerHTML='';renderResponseEditor();$('#designType').value=['full','fullCenter','ccc','ccf'].includes(data.type)?data.type:'full';$('#blockCount').value=Math.max(1,...state.runs.map(r=>r.block));buildDefaultSelection($('#designType').value);if(Array.isArray(data.selected))state.selected=new Set(data.selected.filter(k=>allCandidateTerms($('#designType').value).some(t=>keyOf(t)===k)));catSeed=Number.isInteger(data.seed)&&data.seed>0&&data.seed<=4294967295?data.seed:2026;if(Number.isFinite(data.target)){state.responses[0].target=data.target;state.responses[0].lower=data.target-15;state.responses[0].upper=data.target+15}catEl('catCV').value=data.cv??.5;catRefresh();catStatus('已从投射器载入 '+state.runs.length+' 条数据及完整物理设置；未重新生成响应。')}
 const catSafe=fn=>async()=>{try{await fn()}catch(e){catStatus('操作未完成：'+e.message)}};
 catEl('catBuild').onclick=catSafe(()=>catBuild());catEl('catCollect').onclick=catSafe(catCollect);catEl('catAppend').onclick=catSafe(catAppend);catEl('catStop').onclick=()=>{catStop=true};catEl('catValidate').onclick=catSafe(()=>catValidate());catEl('catSend').onclick=catSafe(async()=>{catEl('catRig').open=true;const p=catValidationSettings();catCheckRows([{x:p.x}]);await catRPC('CONFIGURE',{settings:catSettings(p.x),target:catTarget()});catEl('catValidation').textContent='设置已载入投射器，可手动发射；也可点击独立验证。';catEl('catRig').scrollIntoView({behavior:'smooth',block:'start'})});catEl('catSync').onclick=catSafe(async()=>catImportExperiment(await catRPC('EXPORT')));
 // On-screen generic controls may change levels; regenerate uses the physical mapping.
@@ -4833,6 +4834,7 @@ for(const [id,mode] of [['sampleBtn','screen'],['curvSampleBtn','curve']]){const
 document.addEventListener('click',event=>{const b=event.target.closest('#augmentCccBtn,#augmentCcfBtn,#augmentCenterBtn');if(!b)return;if(catConfig.map.includes(5)){event.preventDefault();event.stopImmediatePropagation();catStatus('球种为分类因子，不能增加球种中心或轴点。请切换球杯高度/释放角/定位销的11次路线。');return}if(b.id==='augmentCccBtn'&&catConfig.mode==='curve'&&state.runs.length===11){event.preventDefault();event.stopImmediatePropagation();catSafe(catAppend)()}},true);
 catEl('catSaveJSON').onclick=()=>{const text=JSON.stringify(catSnapshot(),null,2),url=URL.createObjectURL(new Blob([text],{type:'application/json'})),a=document.createElement('a');a.href=url;a.download='Catapult_DOE_实验包.json';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)};
 catEl('catLoadJSON').onchange=catSafe(async()=>{const file=catEl('catLoadJSON').files[0];if(!file)return;if(file.size>8000000)throw Error('实验包过大');catImportExperiment(JSON.parse(await file.text()));if(catReady)await catRPC('STORE',{experiment:catSnapshot()});catEl('catLoadJSON').value='' });
+const originalRefreshOptimizer=refreshOptimizerLive;refreshOptimizerLive=function(){if(optimizerLive)optimizerLive.z=optimizerLive.z.map((v,i)=>isBallFactor(i)?(v<0?-1:1):v);return originalRefreshOptimizer()};
 // The iframe can finish before load binding when the page is restored from cache.
 setTimeout(()=>{if(!catReady)catRPC('HELLO').then(()=>{if(catReady)return;catReady=true;if(!catImport)return catCollect()}).catch(e=>catStatus(e.message))},1500);
 
