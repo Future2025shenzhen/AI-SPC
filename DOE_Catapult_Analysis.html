@@ -2547,7 +2547,7 @@ function drawOptimizerProfileRow(canvas,item,best){
     text(ctx,factor.name,px+panelW/2,T-20,"#24384f","center",'bold 11.5px "Microsoft YaHei"');
     text(ctx,"当前 "+factorLevelLabel(fi,factor.low+(factor.high-factor.low)*(z[fi]+1)/2),px+panelW/2,T-6,"#1a6fd4","center",'9.5px "Microsoft YaHei"');
     if(fi===0)for(let g=0;g<=4;g++){const y=T+ph*g/4,v=minY+(maxY-minY)*(4-g)/4;
-      text(ctx,fmt(v,4),boxL-6,y,"#6b7c90","right",'9.5px "Microsoft YaHei"');}
+      text(ctx,fmt(v,1),boxL-6,y,"#6b7c90","right",'9.5px "Microsoft YaHei"');}
     const cg=ctx.createLinearGradient(0,T,0,T+ph);
     cg.addColorStop(0,"#123a63");cg.addColorStop(1,"#2f7fb8");
     const optX=plotL+(z[fi]+1)/2*plotW,optY=mapY(optPred);
