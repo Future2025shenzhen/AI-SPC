@@ -37,6 +37,7 @@ python tests/test_physics.py
 python tests/test_rebound_ghost.py
 python tests/test_category_surface_readout.py
 python tests/test_latest_ux.py
+python tests/test_rebound_speed_optimizer_padding.py
 python tests/test_linked_workbench.py
 python tests/test_full_view_rearm.py
 python tests/test_six_factor_doe.py
@@ -58,9 +59,11 @@ python tests/test_six_factor_doe.py
 ## 最新界面与模型控制
 
 - 已删除重复的“完整轨迹总览”区域，只保留主实验画面和首次落点读尺。
-- 默认开启“落地前0.25×慢放”，最后四分之一飞行阶段相对于所选播放速度减速；可以取消。动画、回放仍使用同一物理积分路径，不改变射程。
+- 默认开启“落地与反弹0.25×慢放”，最后四分之一飞行阶段及落地反弹阶段均相对于所选播放速度减速；可以取消。动画、回放仍使用同一物理积分路径，不改变射程。
 - 两处球影为20%透明度（不透明度0.8），首次落点读尺在重新上弦后保留。
 - CCC分析的区组面板可勾选/取消“分析时包含区组项”。取消只重新拟合，不删除阶段标签或响应；导入/导出及两页跳转会保留此选择。
 - 三维曲面使用等比例正交投影、自动适配视窗，支持鼠标旋转/缩放、方向键旋转、加减号缩放、R键复位。立方体可见面有轻微渐变色。
 - 投射器的“一键进入DOE分析”与DOE的“单独打开投射器”会保留实验及设置；重复跳转到已打开页面也会同步更新。
 - 新增连接状态与采集进度条，支持暂停续采、独立验证和JSON实验包保存。
+
+响应优化器的最小值、最大值在绘图区内侧留出对称空白，曲线、刻度、最优标记与拖动使用同一坐标映射；不扩大因子实际范围，不改变预测或采集数据。

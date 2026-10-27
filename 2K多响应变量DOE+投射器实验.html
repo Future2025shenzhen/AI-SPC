@@ -2498,6 +2498,7 @@ function clearOptimizerProfiles(){
   const rb=document.querySelector("#resetOptBtn");if(rb)rb.classList.add("hidden");
 }
 function goalText(goal){return {maximize:"最大化",minimize:"最小化",target:"目标值",range:"范围内"}[goal]||goal;}
+function optimizerPanelGeometry(w,k,fi){const L=54,R=18,panelW=(w-L-R)/k,boxL=L+fi*panelW+7,boxW=Math.max(panelW-14,1),boxR=boxL+boxW,padding=Math.min(12,boxW*.08);return {panelW,boxL,boxW,boxR,plotL:boxL+padding,plotR:boxR-padding,plotW:boxW-2*padding,padding}}
 function drawOptimizerProfileRow(canvas,item,best){
   const z=(optimizerLive&&optimizerLive.z)?optimizerLive.z:((best&&best.z)?best.z:Array(state.factors.length).fill(0));
   const {ctx,w,h}=prepCanvas(canvas,288),L=54,R=18,T=36,B=44,k=state.factors.length;
@@ -2519,7 +2520,7 @@ function drawOptimizerProfileRow(canvas,item,best){
   const pad=Math.max((yMax-yMin)*.12,Math.abs(yMax)*.02,1e-5),minY=yMin-pad,maxY=yMax+pad;
   const mapY=y=>T+ph-(y-minY)/(maxY-minY)*ph;
   curves.forEach(({factor,fi,curve})=>{
-    const px=L+fi*panelW,boxL=px+7,boxW=panelW-14,boxR=boxL+boxW;
+    const px=L+fi*panelW,{boxL,boxW,boxR,plotL,plotR,plotW}=optimizerPanelGeometry(w,k,fi);
     ctx.save();rrect(ctx,boxL,T,boxW,ph,8);ctx.fillStyle="#eef2f7";ctx.fill();ctx.restore();
     let acceptTop=T,acceptBottom=T+ph;
     if(r.goal==="minimize"){acceptTop=mapY(hi);}
@@ -2539,20 +2540,20 @@ function drawOptimizerProfileRow(canvas,item,best){
     for(let g=1;g<4;g++)line(ctx,boxL+2,T+ph*g/4,boxR-2,T+ph*g/4,"#e3e9f0",.8);
     ctx.save();rrect(ctx,boxL,T,boxW,ph,8);ctx.strokeStyle="rgba(163,180,198,.75)";ctx.lineWidth=1;ctx.stroke();ctx.restore();
     const tickY=T+ph+15,midV=(factor.low+factor.high)/2;
-    text(ctx,factorLevelLabel(fi,factor.low),boxL-1,tickY,"#5b6b80","left",'9.5px "Microsoft YaHei"');
+    text(ctx,factorLevelLabel(fi,factor.low),plotL,tickY,"#5b6b80","left",'9.5px "Microsoft YaHei"');
     text(ctx,isBallFactor(fi)?"":fmt(midV,1),boxL+boxW/2,tickY,"#5b6b80","center",'9.5px "Microsoft YaHei"');
-    text(ctx,factorLevelLabel(fi,factor.high),boxR+1,tickY,"#5b6b80","right",'9.5px "Microsoft YaHei"');
-    line(ctx,boxL,T+ph,boxL,T+ph+3,"#c3cfdb",1);line(ctx,boxL+boxW/2,T+ph,boxL+boxW/2,T+ph+3,"#c3cfdb",1);line(ctx,boxR,T+ph,boxR,T+ph+3,"#c3cfdb",1);
+    text(ctx,factorLevelLabel(fi,factor.high),plotR,tickY,"#5b6b80","right",'9.5px "Microsoft YaHei"');
+    line(ctx,plotL,T+ph,plotL,T+ph+3,"#c3cfdb",1);line(ctx,boxL+boxW/2,T+ph,boxL+boxW/2,T+ph+3,"#c3cfdb",1);line(ctx,plotR,T+ph,plotR,T+ph+3,"#c3cfdb",1);
     text(ctx,factor.name,px+panelW/2,T-20,"#24384f","center",'bold 11.5px "Microsoft YaHei"');
     text(ctx,"当前 "+factorLevelLabel(fi,factor.low+(factor.high-factor.low)*(z[fi]+1)/2),px+panelW/2,T-6,"#1a6fd4","center",'9.5px "Microsoft YaHei"');
     if(fi===0)for(let g=0;g<=4;g++){const y=T+ph*g/4,v=minY+(maxY-minY)*(4-g)/4;
       text(ctx,fmt(v,4),boxL-6,y,"#6b7c90","right",'9.5px "Microsoft YaHei"');}
     const cg=ctx.createLinearGradient(0,T,0,T+ph);
     cg.addColorStop(0,"#123a63");cg.addColorStop(1,"#2f7fb8");
-    const optX=boxL+(z[fi]+1)/2*boxW,optY=mapY(optPred);
+    const optX=plotL+(z[fi]+1)/2*plotW,optY=mapY(optPred);
     ctx.save();ctx.beginPath();ctx.rect(boxL,T,boxW,ph);ctx.clip();
     ctx.beginPath();
-    curve.forEach((p,i)=>{const x=boxL+(p.x-factor.low)/(factor.high-factor.low)*boxW;const y=mapY(p.y);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    curve.forEach((p,i)=>{const x=plotL+(p.x-factor.low)/(factor.high-factor.low)*plotW;const y=mapY(p.y);i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
     ctx.strokeStyle=cg;ctx.lineWidth=2;ctx.lineJoin="round";ctx.stroke();
     line(ctx,optX,T,optX,T+ph,"#e04b57",2,[4,3]);
     line(ctx,boxL,optY,boxR,optY,"#12a2a8",1.2,[5,4]);
@@ -2735,11 +2736,11 @@ function resetOptimizerPoint(){
 }
 function optimizerFactorAt(canvas,clientX){
   const rect=canvas.getBoundingClientRect(),k=state.factors.length;
-  const w=Math.max(rect.width,320),L=54,R=18,pw=w-L-R,panelW=pw/k;
-  const x=clientX-rect.left;
+  const w=Math.max(canvas.clientWidth,1),L=54,R=18,pw=w-L-R,panelW=pw/k;
+  const x=(clientX-rect.left)*w/Math.max(rect.width,1);
   const fi=clamp(Math.floor((x-L)/Math.max(panelW,1)),0,k-1);
-  const boxL=L+fi*panelW+7,boxW=Math.max(panelW-14,1);
-  const local=clamp((x-boxL)/boxW,0,1);
+  const {plotL,plotW}=optimizerPanelGeometry(w,k,fi);
+  const local=clamp((x-plotL)/plotW,0,1);
   return {fi,code:local*2-1};
 }
 function bindOptimizerDrag(canvas){
