@@ -33,6 +33,6 @@ with sync_playwright() as p:
  rows=list(csv.reader(dl.value.path().read_text(encoding='utf-8-sig').splitlines()));assert set(r[4] for r in rows[1:])=={'乒乓球','高尔夫球'};assert all(len(r[-1].split('.')[-1])==1 for r in rows[1:])
  # A visible readout persists on the ruler through rebound, rearm and later loading.
  frame=page.frames[1];result=frame.evaluate('''()=>{applySettings([160,110,420,200,200,1]);lastShot=model(vals());lastShot.targetSnapshot=targetSnapshot();reviewing=true;draw(1,lastShot,.15);const mark=$('impact-tape-print'),raw=lastShot.distance,expected=40+(raw-(Math.max(0,Math.floor(raw/10)*10-30)))/70*920;const before=$('impactTape').innerHTML,seed=rngState,n=manual.length;const out={error:Math.abs(Number(mark.getAttribute('cx'))-expected),opacity:mark.getAttribute('opacity'),onTape:Number(mark.getAttribute('cy'))>=42&&Number(mark.getAttribute('cy'))<=107};$('recockArm').click();out.preserved=$('impactTape').innerHTML===before&&rngState===seed&&manual.length===n&&vals()[0]===vals()[1];return out}''')
- assert result['error']<1e-8 and result['opacity']=='.2' and result['onTape'] and result['preserved'],result
+ assert result['error']<1e-8 and result['opacity']=='.8' and result['onTape'] and result['preserved'],result
  assert not errors,errors
- print('Categorical ball names, continuous axes and smooth fixed-category surfaces, optional main-effect plane without Y changes, one-decimal readings/CSV, retained 80%-transparent ruler imprint PASS');browser.close()
+ print('Categorical ball names, continuous axes and smooth fixed-category surfaces, optional main-effect plane without Y changes, one-decimal readings/CSV, retained 20%-transparent ruler imprint PASS');browser.close()
