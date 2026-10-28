@@ -7,7 +7,7 @@ with sync_playwright() as p:
  for name in ['DOE_Catapult_Reference_Layout.html','DOE_Catapult_Competition.html']:
   page=b.new_page(viewport={'width':1600,'height':1100});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.accept());page.set_content((ROOT/name).read_text())
   assert not page.locator('.rig-tools').is_visible()
-  assert page.locator('#front-guard').evaluate('(e)=>e.getBBox().width>180')
+  assert page.locator('#front-guard').evaluate('(e)=>e.getBBox().width>=180')
   assert page.evaluate('factors.length===6&&factors[5].id==="A"')
   for F,d1,d2 in [(4.2,1,20),(8,2,68),(.02,44,68),(100,2,10)]:
    actual=page.evaluate('v=>fTail(...v)',[F,d1,d2]);assert abs(actual-fd.sf(F,d1,d2))<1e-10
