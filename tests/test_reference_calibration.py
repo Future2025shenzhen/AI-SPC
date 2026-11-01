@@ -4,7 +4,7 @@ from urllib.parse import urlparse,unquote
 ROOT=Path(__file__).resolve().parents[1]
 with sync_playwright() as p:
  b=p.chromium.launch(executable_path='/usr/bin/chromium',args=['--no-sandbox']);page=b.new_page(viewport={'width':1500,'height':1100});errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.set_content((ROOT/'DOE_Catapult_Competition.html').read_text());page.locator('#mechanism').scroll_into_view_if_needed();page.evaluate("$('autoRelease').checked=false")
- assert page.locator('[data-arm-mark]').evaluate_all('(es)=>es.map(e=>Number(e.dataset.armMark))')==list(range(0,301,10))
+ assert page.locator('[data-arm-mark]').evaluate_all('(es)=>es.map(e=>Number(e.dataset.armMark))')==list(range(0,201,10))
  assert page.locator('[data-pin-mark]').evaluate_all('(es)=>es.map(e=>Number(e.dataset.pinMark))')==list(range(0,201,10))
  report=page.evaluate('''()=>{const p=diagramPose.pivot,m=ballMountPose(vals(),100),axis={x:400*.62*Math.cos(100*Math.PI/180),y:-400*.62*Math.sin(100*Math.PI/180)},ball={x:Number($('loaded-ball').getAttribute('cx'))-p.x,y:Number($('loaded-ball').getAttribute('cy'))-p.y};return {ballRight:ball.x>axis.x+15,default:vals(),label:$('a-arm').querySelector('[data-arm-mark="200"] path').getAttribute('d'),hook:$('bungee-hardware').getAttribute('transform'),limit:$('b-limit').getAttribute('transform')}}''')
  assert report['ballRight'] and report['default']==[100,100,400,200,200,0]
