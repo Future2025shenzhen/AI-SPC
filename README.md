@@ -40,6 +40,7 @@ python tests/test_category_surface_readout.py
 python tests/test_latest_ux.py
 python tests/test_rebound_speed_optimizer_padding.py
 python tests/test_linked_workbench.py
+python tests/test_workbench_reuse_physics.py
 python tests/test_full_view_rearm.py
 python tests/test_six_factor_doe.py
 ```
@@ -75,3 +76,6 @@ python tests/test_six_factor_doe.py
 本轮8项更新：定位销与弹力绳可调至0–200格，右臂刻度补齐0–200并提供竖向滑槽；球杯200–400 mm，默认400，420 mm木臂的顶端与最高球杯口齐平。量角器数字加大、沿半径排列。乒乓球改为莱茵蓝径向渐变，高尔夫球保持白色凹点。F接近0而被侧板遮住时，仍可拖动侧板外的红圈。
 
 曲率路线杯高度改为280/340 mm，CCC杯轴点约259.5/360.5 mm，均在200–400 mm行程内。因为臂长和立臂安装位置更新，模型标识为reference-v3；旧数据保留分析，追加或验证需创建本版新实验，避免混用几何版本。
+
+
+最新增强：实验数据仓库、跨设计观测复用、主效应/交互/二次模型可估计性检查、原始精度CSV与本机恢复。物理画面可显示离散积分轨迹点，并与无阻力理想抛物线比较。全部10项排版与功能改进及使用方法见 [OPTIMIZATION_NOTES.md](OPTIMIZATION_NOTES.md)。

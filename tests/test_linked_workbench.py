@@ -69,7 +69,7 @@ with sync_playwright() as p:
     for r in first:assert page.evaluate('(run)=>state.runs.find(r=>r.run===run).y',r['run'])==r['y']
     page.screenshot(path=str(ROOT/'preview-linked-doe.png'),full_page=False)
     # Opaque-origin frame models the origin isolation of sibling file:// pages.
-    opaque=context.new_page();opaque.on('pageerror',lambda e:errors.append(str(e)))
+    opaque_context=browser.new_context(viewport={'width':1550,'height':1100});opaque_context.route('**/*',serve);opaque=opaque_context.new_page();opaque.on('pageerror',lambda e:errors.append(str(e)))
     opaque.add_init_script("window.sawNullOrigin=false;window.addEventListener('message',e=>{if(e.data?.protocol==='CATAPULT_DOE_V1'&&e.origin==='null')window.sawNullOrigin=true})")
     opaque.route('**/opaque.html',lambda r:r.fulfill(body=(ROOT/'DOE_Catapult_Analysis.html').read_text().replace('id="catapultFrame"','sandbox="allow-scripts allow-popups allow-downloads" id="catapultFrame"'),content_type='text/html'))
     opaque.goto('http://catapult.local/opaque.html');opaque.wait_for_function('catReady&&!catBusy&&state.runs.every(r=>Number.isFinite(r.y))',timeout=60000)
