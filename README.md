@@ -1,5 +1,7 @@
 # 投射器 × DOE 联动实验室
 
+> **本次附件《投射器实验.html》的优化版**：请使用 **[投射器实验_优化版.html](投射器实验_优化版.html)**，内置完整 DOE 工作台，可单文件离线运行。专用下载包为 [catapult-upload-optimized.zip](downloads/catapult-upload-optimized.zip)，改进与使用方法见 [附件优化说明](UPLOADED_CATAPULT_NOTES.md)。该版本保留附件的教学响应模型与刻度范围；下文其他入口描述的是仓库原有的另一版实验室。
+
 推荐入口：解压整个 ZIP 后打开 **DOE_Catapult_Analysis.html**。保留同目录的 **DOE_Catapult_Competition.html**，不要只复制一个文件。中文名称 **2K多响应变量DOE+投射器实验.html** 是同一 DOE 页面。图表库全部内置，计算不上传服务器。
 
 若浏览器限制本地 `file://` 页面联动，可运行 `python start_lab.py`，会在本机 127.0.0.1 打开实验室，无需安装额外 Python 包或联网。
