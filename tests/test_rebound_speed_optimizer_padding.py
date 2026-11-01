@@ -10,7 +10,7 @@ with sync_playwright() as p:
   if f.is_file():r.fulfill(path=str(f))
   else:r.abort()
  ctx.route('**/*',route);errors=[];rig=ctx.new_page();rig.on('pageerror',lambda e:errors.append(str(e)));rig.goto('http://catapult.local/DOE_Catapult_Competition.html')
- rig.evaluate('''()=>{applySettings([160,110,420,200,200,0]);$('noise').value=0;window.reboundSamples=[];const render=draw;draw=function(progress,shot,bounce){render(progress,shot,bounce);if(progress===1&&Number.isFinite(bounce)&&bounce>0&&bounce<1.2)reboundSamples.push({now:performance.now(),t:bounce})}}''');rig.select_option('#motionSpeed','2')
+ rig.evaluate('''()=>{applySettings([160,110,400,200,200,0]);$('noise').value=0;window.reboundSamples=[];const render=draw;draw=function(progress,shot,bounce){render(progress,shot,bounce);if(progress===1&&Number.isFinite(bounce)&&bounce>0&&bounce<1.2)reboundSamples.push({now:performance.now(),t:bounce})}}''');rig.select_option('#motionSpeed','2')
  rates=[]
  for slow in [True,False]:
   rig.set_checked('#slowLanding',slow);rig.evaluate('reboundSamples=[]');rig.click('#launch');rig.wait_for_function('!busy&&manual.length>0',timeout=30000)

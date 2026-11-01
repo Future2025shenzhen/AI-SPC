@@ -25,7 +25,7 @@ with sync_playwright() as p:
     assert all(r['error']<1e-12 and r['seed'] and r['record'] for r in comparison)
     # Invalid requests do not unlock an existing shot or alter measurements.
     before=engine.evaluate('({n:manual.length,seed:rngState})')
-    assert page.evaluate('''async()=>{try{await catRPC('SIMULATE',{settings:[150,110,420,200,200,.5],cv:.5,seed:123});return false}catch(e){return true}}''')
+    assert page.evaluate('''async()=>{try{await catRPC('SIMULATE',{settings:[150,110,400,200,200,.5],cv:.5,seed:123});return false}catch(e){return true}}''')
     assert engine.evaluate('({n:manual.length,seed:rngState})')==before
     page.select_option('#catPreset','curve');page.click('#catBuild');page.click('#catCollect')
     page.wait_for_function('!catBusy&&state.runs.length===11&&state.runs.every(r=>Number.isFinite(r.y))',timeout=60000)
